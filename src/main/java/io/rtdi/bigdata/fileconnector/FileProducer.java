@@ -49,14 +49,14 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 		pollinterval = getProducerProperties().getPollInterval()*1000L;
 		directory = new File(getConnectionProperties().getRootDirectory());
 		if (!directory.exists()) {
-			throw new PropertiesException("The specified root directory does not exist", "Check the connection properties this producer belongs to");
+			throw new PropertiesException("The specified root directory does not exist", "Check the connection properties this producer belongs to", null, directory.getAbsolutePath());
 		} else if (!directory.isDirectory()) {
-			throw new PropertiesException("The specified root directory exists but is not a directory", "Check the connection properties this producer belongs to");
+			throw new PropertiesException("The specified root directory exists but is not a directory", "Check the connection properties this producer belongs to", null, directory.getAbsolutePath());
 		}
+		String schemafilename = getProducerProperties().getSchemaFile();
 		try {
-			String schemafilename = getProducerProperties().getSchemaFile();
 			if (schemafilename == null) {
-				throw new PropertiesException("No schema file name specified", "check the producer settings");
+				throw new PropertiesException("No schema file name specified", "check the producer settings", null, schemafilename);
 			}
 			File schemadir = EditSchemaData.getSchemaDirectory(getConnectionController());
 			File schemafile = EditSchemaData.getSchemaFile(schemadir, schemafilename);
@@ -64,7 +64,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 			Pattern filepattern = Pattern.compile(format.getFilenamepattern());
 			filter = new FileFilter(filepattern);
 		} catch (PatternSyntaxException e) {
-			throw new PropertiesException("The filename pattern is not valid", "Check the pattern if it is a true regexp syntax");
+			throw new PropertiesException("The filename pattern is not valid", "Check the pattern if it is a true regexp syntax", null, schemafilename);
 		}
 		this.producername = getProducerProperties().getName();
 	}
@@ -91,9 +91,9 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 		String fileschemaname = getProducerProperties().getSchemaFile();
 		schemahandler = getSchemaHandler(fileschemaname);
 		if (topichandler == null) {
-			throw new PropertiesException("The specified target topic does not exist", "Check producer properties");
+			throw new PropertiesException("The specified target topic does not exist", "Check producer properties", null, getProducerProperties().getTargetTopic());
 		} else if (schemahandler == null) {
-			throw new PropertiesException("The specified target schema does not exist", "Check producer properties");
+			throw new PropertiesException("The specified target schema does not exist", "Check producer properties", null, getProducerProperties().getTargetTopic());
 		} else {
 			this.addTopicSchema(topichandler, schemahandler);
 		}

@@ -1,9 +1,10 @@
-"sap/ui/core/mvc/Controller", "sap/ui/model/json/JSONModel"
-Controller, JSONModel, InputFormatter
+showFooter : function() {
+	return true;
+},
 init : function() {
 	var oModel = new JSONModel();
 	var that = this;
-	var sSchemaname = jQuery.sap.getUriParameters().get("name");
+	var sSchemaname = jQuery.sap.getUriParameters().get("schemaname");
 	var sConnectionname = jQuery.sap.getUriParameters().get("connectionname");
 	if (sSchemaname == null) {
 		oModel.loadData("../rest/fileschemas/" + encodeURI(sConnectionname) + "/new/template");
@@ -24,8 +25,13 @@ init : function() {
 	this.getView().setModel(oLocaleModel, "locales");
 
 	var oStateModel = this.getView().getModel("state");
-	oStateModel.setProperty("/title", "Edit Schema");
-	this.onPressEdit(null);
+	oStateModel.setProperty("/title", "Edit File Schema");
+	oStateModel.setProperty("/breadcrumbs", [ 
+		{"text" : "Homepage", "link" : "./Home"}, 
+		{"text" : "Connections", "link" : "./Connections"}, 
+		{"text" : "Schemas", "link" : "./Browse?connectionname=" + encodeURI(sConnectionname) }, 
+		{"text" : "File Schemas", "link" : "./ListSchemas?connectionname=" + encodeURI(sConnectionname) }
+	] );
 },
 edit : function(oEvent) {
 },
@@ -38,8 +44,12 @@ save : function(oEvent) {
 		xmlhttp.open("POST", "../rest/fileschemas/" + encodeURI(sConnectionname) + "/" + encodeURI(sSchemaname));
 		xmlhttp.setRequestHeader("Content-Type", "application/json");
 		xmlhttp.onreadystatechange = function() {
-		    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-		        alert(xmlhttp.responseText);
+		    if (xmlhttp.readyState == 4) {
+		    	if (xmlhttp.status == 200) {
+		        	alert(xmlhttp.responseText);
+		    	} else {
+		    		alert(xmlhttp.responseText);
+		    	}
 		    }
 		}
 		xmlhttp.send(oModel.getJSON());
@@ -54,7 +64,7 @@ onFilenamePatternChange : function(oEvent) {
 	var pattern = oModel.getProperty("/filenamepattern");
 	var sConnectionname = jQuery.sap.getUriParameters().get("connectionname");
 	var oFileModel = new JSONModel();
-	oFileModel.loadData("../rest/files/" + encodeURI(sConnectionname) + "/" + encodeURI(pattern) + "/100");
+	oFileModel.loadData("../rest/files/" + encodeURI(sConnectionname) + "/" + btoa(pattern) + "/100");
 	this.getView().setModel(oFileModel, "files");
 },
 onDataFileChange : function(oEvent) {
@@ -77,8 +87,12 @@ onPressGuessSettings : function(oEvent) {
 		xmlhttp.open("POST", "../rest/files/guess/" + encodeURI(sConnectionname) + "/" + encodeURI(sFilePath));
 		xmlhttp.setRequestHeader("Content-Type", "application/json");
 		xmlhttp.onreadystatechange = function() {
-		    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-				oModel.setJSON(xmlhttp.responseText);
+		    if (xmlhttp.readyState == 4) {
+		    	if (xmlhttp.status == 200) {
+					oModel.setJSON(xmlhttp.responseText);
+		    	} else {
+		    		alert(xmlhttp.responseText);
+		    	}
 		    }
 	    }
 		xmlhttp.send(oModel.getJSON());
@@ -95,10 +109,14 @@ readraw : function() {
 		xmlhttp.open("POST", "../rest/files/raw/" + encodeURI(sConnectionname) + "/" + encodeURI(sFilePath));
 		xmlhttp.setRequestHeader("Content-Type", "application/json");
 		xmlhttp.onreadystatechange = function() {
-		    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-				var oDataModel = new JSONModel();
-				oDataModel.setJSON(xmlhttp.responseText);
-		        that.getView().setModel(oDataModel, "rawdata");
+		    if (xmlhttp.readyState == 4) {
+		    	if (xmlhttp.status == 200) {
+					var oDataModel = new JSONModel();
+					oDataModel.setJSON(xmlhttp.responseText);
+		        	that.getView().setModel(oDataModel, "rawdata");
+		    	} else {
+		    		alert(xmlhttp.responseText);
+		    	}
 		    }
 	    }
 		xmlhttp.send(oModel.getJSON());
@@ -115,10 +133,14 @@ readparsed : function() {
 		xmlhttp.open("POST", "../rest/files/parsed/" + encodeURI(sConnectionname) + "/" + encodeURI(sFilePath));
 		xmlhttp.setRequestHeader("Content-Type", "application/json");
 		xmlhttp.onreadystatechange = function() {
-		    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-				var oDataModel = new JSONModel();
-				oDataModel.setJSON(xmlhttp.responseText);
-		        that.getView().setModel(oDataModel, "parseddata");
+		    if (xmlhttp.readyState == 4) {
+		    	if (xmlhttp.status == 200) {
+					var oDataModel = new JSONModel();
+					oDataModel.setJSON(xmlhttp.responseText);
+		        	that.getView().setModel(oDataModel, "parseddata");
+		    	} else {
+		    		alert(xmlhttp.responseText);
+		    	}
 		    }
 	    }
 		xmlhttp.send(oModel.getJSON());

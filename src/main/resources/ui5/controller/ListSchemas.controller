@@ -1,13 +1,17 @@
-"sap/ui/core/mvc/Controller", "sap/ui/model/json/JSONModel"
-Controller, JSONModel, InputFormatter
+showFooter : function() {
+	return false;
+},
 init : function() {
 	var oModel = new JSONModel();
-	oModel.loadData("../rest/fileschemas", null, false);
+	var sConnectionname = jQuery.sap.getUriParameters().get("connectionname");
+	oModel.loadData("../rest/connections/" + encodeURI(sConnectionname) + "/remoteschemas");
 	this.getView().setModel(oModel);
-	var oStateModel = this.getView().getModel("state");
-	oStateModel.setProperty("/title", "Schemas");
-	oStateModel.setProperty("/edit", true );
-	oStateModel.setProperty("/breadcrumbs", [ {"text" : "ListSchemas", "link" : "ListSchemas"} ] );
+	oStateModel.setProperty("/title", "File Schemas");
+	oStateModel.setProperty("/breadcrumbs", [ 
+		{"text" : "Homepage", "link" : "./Home"}, 
+		{"text" : "Connections", "link" : "./Connections"}, 
+		{"text" : "Schemas", "link" : "./Browse?connectionname=" + encodeURI(sConnectionname) }
+	] );
 },
 edit : function(oEvent) {
 },
@@ -19,10 +23,11 @@ onNewSchema : function() {
 	window.location.href = 'EditSchema';
 },
 onFilenamePress : function(oEvent) {
+	var sConnectionname = jQuery.sap.getUriParameters().get("connectionname");
 	var path = oEvent.getSource().getBindingContext().getPath();
 	var oModel = this.getView().getModel();
-	var sSchemaname = oModel.getProperty(path).schemaname;
-	window.location.href = 'EditSchema?name=' + encodeURI(sSchemaname);
+	var obj = oModel.getProperty(path);
+	window.location.href = 'EditSchema?connectionname=' + encodeURI(sConnectionname) + "&schemaname=" + encodeURI(obj.tablename);
 },
 FileSizeFormatter : function(size) {
 	if (typeof size === "undefined") {

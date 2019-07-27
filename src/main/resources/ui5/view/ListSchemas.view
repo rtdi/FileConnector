@@ -1,29 +1,26 @@
-<t:Table
-        rows="{/files}"
-        selectionMode="MultiToggle"
-        enableSelectAll="false"
-        ariaLabelledBy="title"
-        id="idschematable"
-        visibleRowCountMode="Auto" >
-    <t:extension>
-        <Toolbar>
-            <Title id="title" text="Schemas" />
-            <ToolbarSpacer/>
-            <Button text="New Schema" press="onNewSchema" />
-        </Toolbar>
-    </t:extension>
-    <t:columns>
-        <t:Column>
-            <Label text="Name"/>
-            <t:template>
-                <Link text="{filename}" wrapping="false" press="onFilenamePress" />
-            </t:template>
-        </t:Column>
-         <t:Column width="20%">
-            <Label text="last modified" />
-            <t:template>
-                <Text text="{path:'lastmodified', formatter:'.UnixDateFormatter'}" />
-            </t:template>
-        </t:Column>
-    </t:columns>
-</t:Table>
+<l:HorizontalLayout
+	allowWrapping="true"
+	content="{/tablenames}">
+	<f:Card
+		class="sapUiMediumMargin"
+		width="200px" >
+		<f:header>
+			<card:Header
+				title="{tablename}"
+				iconSrc="sap-icon://table-row"
+				press="onFilenamePress" />
+		</f:header>
+	</f:Card>
+</l:HorizontalLayout>
+
+<f:Card
+	class="sapUiMediumMargin"
+	width="200px"
+	enabled="{path: 'state>/roles/schema', formatter: '.enableControl'}" >
+	<f:header>
+		<card:Header
+			title="Add new"
+			iconSrc="sap-icon://table-row"
+			press="onNewSchema" />
+	</f:header>
+</f:Card>

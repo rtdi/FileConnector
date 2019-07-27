@@ -18,6 +18,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.tomcat.util.codec.binary.Base64;
+
 import io.rtdi.bigdata.connector.connectorframework.WebAppController;
 import io.rtdi.bigdata.connector.connectorframework.controller.ConnectionController;
 import io.rtdi.bigdata.connector.connectorframework.controller.ConnectorController;
@@ -40,10 +42,11 @@ public class FilesService {
 	@Path("/files/{connectionname}/{pattern}/{limit}")
     @Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ServletSecurityConstants.ROLE_VIEW})
-    public Response getFiles(@PathParam("connectionname") String connectionname, @PathParam("pattern") String pattern, @PathParam("limit") int limit) {
+    public Response getFiles(@PathParam("connectionname") String connectionname, @PathParam("pattern") String base64pattern, @PathParam("limit") int limit) {
 		try {
 			ConnectorController connector = WebAppController.getConnectorOrFail(servletContext);
 			ConnectionController connection = connector.getConnectionOrFail(connectionname);
+			String pattern = new String(Base64.decodeBase64(base64pattern), "UTF-8");
 			return Response.ok(new FileList(connection, pattern, limit)).build();
 		} catch (Exception e) {
 			return JAXBErrorResponseBuilder.getJAXBResponse(e);

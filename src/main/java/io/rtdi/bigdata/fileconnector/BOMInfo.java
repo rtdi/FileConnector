@@ -2,18 +2,18 @@ package io.rtdi.bigdata.fileconnector;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 /**
+ * <ul>
  * <li><pre>00 00 FE FF  = UTF-32, big-endian</pre></li>
  * <li><pre>FF FE 00 00  = UTF-32, little-endian</pre></li>
  * <li><pre>FE FF        = UTF-16, big-endian</pre></li>
  * <li><pre>FF FE        = UTF-16, little-endian</pre></li>
  * <li><pre>EF BB BF     = UTF-8</pre></li>
- *
+ * </ul>
  */
 public class BOMInfo {
 	public static final BOMInfo UTF32BE = new BOMInfo(ByteBuffer.wrap(new byte[] {0x00, 0x00, (byte) 0xfe, (byte) 0xff}), Charset.forName("UTF-32BE"));
@@ -49,9 +49,9 @@ public class BOMInfo {
 	}
 
 	/**
- 	 * @param file
-	 * @throws IOException 
-	 * @throws FileNotFoundException 
+ 	 * @param file to check
+	 * @return BOMInfo
+	 * @throws IOException in case the file cannot be read
 	 */
 	public static BOMInfo checkBom(File file) throws IOException {
 		ByteBuffer b4 = ByteBuffer.allocate(4);

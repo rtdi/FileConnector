@@ -1,0 +1,10 @@
+	<f:Card
+		class="sapUiMediumMargin"
+		width="200px">
+		<f:header>
+			<card:Header
+				title="Manage File Schemas"
+				iconSrc="sap-icon://table-row"
+				press="onPressFileSchema" />
+		</f:header>
+	</f:Card>

@@ -1,5 +1,6 @@
-"sap/ui/core/mvc/Controller", "sap/ui/model/json/JSONModel"
-Controller, JSONModel, InputFormatter
+showFooter : function() {
+	return false;
+},
 init : function() {
 	var oModel = new JSONModel();
 	oModel.loadData("../rest/files", null, false);

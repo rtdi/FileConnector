@@ -30,7 +30,7 @@ public class FileBrowser extends BrowsingService<FileConnectionProperties> {
 	 * <li>The path is a file, not a directory</li>
 	 * <li>The directory is not readable</li></ul>
 	 * 
-	 * @throws IOException
+	 * @throws IOException in case the schema directory cannot be used
 	 */
 	@Override
 	protected void open() throws IOException {
