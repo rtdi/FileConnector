@@ -1,4 +1,4 @@
-package io.rtdi.bigdata.fileconnector.service;
+package io.rtdi.bigdata.fileconnector.rest;
 
 import java.io.File;
 
@@ -18,8 +18,8 @@ import javax.ws.rs.core.Response;
 import io.rtdi.bigdata.connector.connectorframework.WebAppController;
 import io.rtdi.bigdata.connector.connectorframework.controller.ConnectionController;
 import io.rtdi.bigdata.connector.connectorframework.controller.ConnectorController;
-import io.rtdi.bigdata.connector.connectorframework.rest.service.JAXBErrorResponseBuilder;
-import io.rtdi.bigdata.connector.connectorframework.rest.service.JAXBSuccessResponseBuilder;
+import io.rtdi.bigdata.connector.connectorframework.rest.JAXBErrorResponseBuilder;
+import io.rtdi.bigdata.connector.connectorframework.rest.JAXBSuccessResponseBuilder;
 import io.rtdi.bigdata.connector.connectorframework.servlet.ServletSecurityConstants;
 import io.rtdi.bigdata.fileconnector.entity.EditSchemaData;
 

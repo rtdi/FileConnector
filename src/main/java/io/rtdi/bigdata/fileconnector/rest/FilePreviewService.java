@@ -1,4 +1,4 @@
-package io.rtdi.bigdata.fileconnector.service;
+package io.rtdi.bigdata.fileconnector.rest;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,7 +32,7 @@ import io.rtdi.bigdata.connector.connectorframework.WebAppController;
 import io.rtdi.bigdata.connector.connectorframework.controller.ConnectionController;
 import io.rtdi.bigdata.connector.connectorframework.controller.ConnectorController;
 import io.rtdi.bigdata.connector.connectorframework.exceptions.ConnectorCallerException;
-import io.rtdi.bigdata.connector.connectorframework.rest.service.JAXBErrorResponseBuilder;
+import io.rtdi.bigdata.connector.connectorframework.rest.JAXBErrorResponseBuilder;
 import io.rtdi.bigdata.connector.connectorframework.servlet.ServletSecurityConstants;
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.PropertiesException;
 import io.rtdi.bigdata.fileconnector.FileConnectionProperties;

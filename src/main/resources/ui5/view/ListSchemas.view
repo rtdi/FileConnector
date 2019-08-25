@@ -16,7 +16,7 @@
 <f:Card
 	class="sapUiMediumMargin"
 	width="200px"
-	enabled="{path: 'state>/roles/schema', formatter: '.enableControl'}" >
+	visible="{path: 'state>/roles/schema', formatter: '.enableControl'}" >
 	<f:header>
 		<card:Header
 			title="Add new"

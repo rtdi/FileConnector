@@ -10,7 +10,7 @@ public class JerseyApplicationFileConnector extends JerseyApplication {
 
 	@Override
 	protected String[] getPackages() {
-		return new String[] {"io.rtdi.bigdata.fileconnector.service"};
+		return new String[] {"io.rtdi.bigdata.fileconnector.rest"};
 	}
 
 }

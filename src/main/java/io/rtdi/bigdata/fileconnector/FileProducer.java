@@ -31,7 +31,7 @@ import io.rtdi.bigdata.connector.pipeline.foundation.enums.RowType;
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.PropertiesException;
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.SchemaException;
 import io.rtdi.bigdata.fileconnector.entity.EditSchemaData;
-import io.rtdi.bigdata.fileconnector.service.FilePreviewService;
+import io.rtdi.bigdata.fileconnector.rest.FilePreviewService;
 
 public class FileProducer extends Producer<FileConnectionProperties, FileProducerProperties> {
 
@@ -192,6 +192,14 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 		@Override
 		protected void stopThreadControllerImpl(ControllerExitType exittype) {
 		}
+
+		@Override
+		protected void updateLandscape() {
+		}
+
+		@Override
+		protected void updateSchemaCache() {
+		}
 	}
 	
 	@Override
@@ -231,12 +239,12 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 			}
 			Matcher matcher = filepattern.matcher(name);
 	        boolean matches = matcher.matches();
-	        if (getProducerController().getProducerCount() > 1) {
+	        if (getProducerController().getInstanceCount() > 1) {
 	        	/*
 	        	 * In case of multiple producer instances, each producer reads one file only. Which one is derived from the file name hash value.
 	        	 */
 	        	int hash = name.hashCode();
-	        	matches &= (hash % getProducerController().getProducerCount()) == getProducerInstance().getInstanceNumber();
+	        	matches &= (hash % getProducerController().getInstanceCount()) == getProducerInstance().getInstanceNumber();
 	        }
 	        return matches;
 		}

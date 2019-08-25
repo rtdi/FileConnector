@@ -8,7 +8,6 @@ init : function() {
 	this.getView().setModel(oModel);
 	var oStateModel = this.getView().getModel("state");
 	oStateModel.setProperty("/title", "Directory");
-	oStateModel.setProperty("/edit", true );
 },
 edit : function(oEvent) {
 },
