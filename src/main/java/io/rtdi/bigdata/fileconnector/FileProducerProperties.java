@@ -13,9 +13,9 @@ public class FileProducerProperties extends ProducerProperties {
 
 	public FileProducerProperties(String name) throws PropertiesException {
 		super(name);
-		properties.addStringProperty(FILESCHEMA, "Schema file name", "The name of the schema created for this connector", "sap-icon://form", null, true);
+		properties.addSchemaSelector(FILESCHEMA, "Schema file name", "The name of the schema created for this connector", "sap-icon://form", null, true);
 		properties.addIntegerProperty(POLLINTERVAL, "Poll interval [s]", "Every n seconds scan the directory for new files", "sap-icon://future", 20, true);
-		properties.addStringProperty(TARGETTOPIC, "Topic name", "The topic name this producer should post all data", "sap-icon://cargo-train", "CSV_ROWS", true);
+		properties.addTopicSelector(TARGETTOPIC, "Topic name", "The topic name this producer should post all data", "sap-icon://cargo-train", "CSV_ROWS", true);
 	}
 
 	public FileProducerProperties(File dir, String name) throws PropertiesException {

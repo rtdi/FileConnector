@@ -23,12 +23,12 @@
 					
 					<core:Title text="Defaults" />
 					<Label text="Default charset to use" />
-					<ComboBox items="{charsets>/charsets}" selectedKey="{/charset}">
-						<core:Item key="{charsets>code}" text="{charsets>name}" />
+					<ComboBox items="{path: 'charsets>/charsets', sorter: { path: 'code' } }" selectedKey="{/charset}">
+						<core:Item key="{charsets>code}" text="{charsets>code}" />
 					</ComboBox>
 					<Label text="Default Locale to use" />
-					<ComboBox items="{locales>/locales}" selectedKey="{/locale}">
-						<core:Item key="{locales>code}" text="{locales>name}" />
+					<ComboBox items="{path: 'locales>/locales', sorter: { path: 'code' } }" selectedKey="{/locale}">
+						<core:Item key="{locales>code}" text="{locales>code}" />
 					</ComboBox>
 					
 					<core:Title text="Found data files" />
@@ -78,8 +78,15 @@
 			</form:SimpleForm>
 			<Button icon="sap-icon://refresh" text="Reload" press="onPressParsedDataRefresh" />
 			<Button icon="sap-icon://hint" press="onPressGuessSettings" />
-			<t:Table columns="{path: 'parseddata>/columns', factory: '.columnFactory'}" rows="{parseddata>/rows}">
-			</t:Table>
+			<ScrollContainer>
+				<Table 
+					columns="{path: '/columns', factory: '.columnFactory'}"
+					items="{path: 'parseddata>/rows', factory: '.rowFactory'}"
+					fixedLayout="false"
+					growing="true"
+					growingThreshold="5">
+				</Table>
+			</ScrollContainer>
 		</IconTabFilter>
 		<IconTabFilter text="Column Definitions">
 			<Table items="{/columns}" >
@@ -90,12 +97,16 @@
 					<Column>
 						<Text text="Data Type" />
 					</Column>
+					<Column>
+						<Text text="Format Strings" />
+					</Column>
 				</columns>
 				<items>
 					<ColumnListItem>
 						<cells>
 							<Input value="{name}" />
 							<Input value="{datatype}" />
+							<TextArea value="{patterns}"/>
 						</cells>
 					</ColumnListItem>
 				</items>

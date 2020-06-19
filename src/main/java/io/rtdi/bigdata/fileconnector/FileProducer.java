@@ -14,11 +14,13 @@ import java.util.regex.PatternSyntaxException;
 
 import org.apache.avro.Schema;
 
-import com.univocity.parsers.common.record.Record;
+import com.univocity.parsers.common.ParsingContext;
+import com.univocity.parsers.common.processor.ObjectRowProcessor;
+import com.univocity.parsers.conversions.Conversions;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 
-import io.rtdi.bigdata.connector.connectorframework.Producer;
+import io.rtdi.bigdata.connector.connectorframework.ProducerQueuing;
 import io.rtdi.bigdata.connector.connectorframework.controller.ProducerInstanceController;
 import io.rtdi.bigdata.connector.connectorframework.controller.ThreadBasedController;
 import io.rtdi.bigdata.connector.connectorframework.exceptions.ConnectorRuntimeException;
@@ -26,14 +28,16 @@ import io.rtdi.bigdata.connector.pipeline.foundation.SchemaConstants;
 import io.rtdi.bigdata.connector.pipeline.foundation.SchemaHandler;
 import io.rtdi.bigdata.connector.pipeline.foundation.TopicHandler;
 import io.rtdi.bigdata.connector.pipeline.foundation.avro.JexlGenericData.JexlRecord;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.IAvroDatatype;
 import io.rtdi.bigdata.connector.pipeline.foundation.enums.ControllerExitType;
 import io.rtdi.bigdata.connector.pipeline.foundation.enums.RowType;
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.PropertiesException;
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.SchemaException;
 import io.rtdi.bigdata.fileconnector.entity.EditSchemaData;
+import io.rtdi.bigdata.fileconnector.entity.EditSchemaData.ColumnDefinition;
 import io.rtdi.bigdata.fileconnector.rest.FilePreviewService;
 
-public class FileProducer extends Producer<FileConnectionProperties, FileProducerProperties> {
+public class FileProducer extends ProducerQueuing<FileConnectionProperties, FileProducerProperties> {
 
 	private long pollinterval;
 	private FilenameFilter filter;
@@ -46,7 +50,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 
 	public FileProducer(ProducerInstanceController instance) throws IOException {
 		super(instance);
-		pollinterval = getProducerProperties().getPollInterval()*1000L;
+		pollinterval = getProducerProperties().getPollInterval();
 		directory = new File(getConnectionProperties().getRootDirectory());
 		if (!directory.exists()) {
 			throw new PropertiesException("The specified root directory does not exist", "Check the connection properties this producer belongs to", null, directory.getAbsolutePath());
@@ -73,9 +77,8 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 	public void startProducerChangeLogging() throws IOException {
 	}
 
-	@Override
-	public void startProducerCapture() throws IOException {
-		startLongRunningProducer(new FileParser());
+	public ThreadBasedController<?> getQueueProducer() {
+		return new FileParser(instance.getName());
 	}
 		
 	protected Schema createSchema(String sourceschemaname) throws SchemaException, IOException {
@@ -86,7 +89,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 	public void createTopiclist() throws IOException {
 		topichandler = getTopic(getProducerProperties().getTargetTopic());
 		if (topichandler == null) {
-			topichandler = getPipelineAPI().topicCreate(getProducerProperties().getTargetTopic(), 1, 1);
+			topichandler = getPipelineAPI().getTopicOrCreate(getProducerProperties().getTargetTopic(), 1, (short) 1);
 		}
 		String fileschemaname = getProducerProperties().getSchemaFile();
 		schemahandler = getSchemaHandler(fileschemaname);
@@ -123,47 +126,156 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 	@Override
 	public void closeImpl() {
 	}
+	
+	public class AvroRowProcessor extends ObjectRowProcessor {
+		int rownumber = 1;
+		private File file;
+		private String transactionid;
+		
+	    public AvroRowProcessor() {
+	    	for (int i=0; i<format.getColumns().size(); i++) {
+	    		ColumnDefinition col = format.getColumns().get(i);
+	    		IAvroDatatype dt = col.getAvroDatatype();
+	    		String formats = col.getPatterns();
+	    		String[] formatpatterns = null;
+	    		if (formats != null) {
+	    			formatpatterns = formats.replace('\r', ' ').split("\\n");
+	    		}
+	    		switch (dt.getAvroType()) {
+	    		// Strings
+				case AVROCLOB:
+				case AVRONCLOB:
+				case AVRONVARCHAR:
+				case AVROSTRING:
+				case AVROURI:
+				case AVROUUID:
+				case AVROVARCHAR:
+					break;
+					
+				// Numbers
+				case AVROBYTE:
+					convertIndexes(Conversions.toByte()).set(i);
+					break;
+				case AVRODECIMAL:
+					convertIndexes(Conversions.toBigDecimal()).set(i);
+					break;
+				case AVRODOUBLE:
+					convertIndexes(Conversions.toDouble()).set(i);
+					break;
+				case AVROFLOAT:
+					convertIndexes(Conversions.toFloat()).set(i);
+					break;
+				case AVROINT:
+					convertIndexes(Conversions.toInteger()).set(i);
+					break;
+				case AVROLONG:
+					convertIndexes(Conversions.toLong()).set(i);
+					break;
+				case AVROSHORT:
+					convertIndexes(Conversions.toShort()).set(i);
+					break;
+
+				// Date/Time
+				case AVRODATE:
+					convertIndexes(Conversions.toDate(formatpatterns)).set(i);
+					break;
+				case AVROTIMEMICROS:
+					// convertIndexes(Conversions.to????()).set(i);
+					break;
+				case AVROTIMEMILLIS:
+					// convertIndexes(Conversions.to????()).set(i);
+					break;
+				case AVROTIMESTAMPMICROS:
+					convertIndexes(Conversions.toDate(formatpatterns)).set(i);
+					break;
+				case AVROTIMESTAMPMILLIS:
+					convertIndexes(Conversions.toDate(formatpatterns)).set(i);
+					break;
+
+				case AVROBOOLEAN:
+					convertIndexes(Conversions.toBoolean()).set(i);
+					break;
+
+				// Not supported yet
+				case AVROANYPRIMITIVE:
+					break;
+				case AVROARRAY:
+					break;
+				case AVROBYTES:
+					break;
+				case AVROENUM:
+					break;
+				case AVROFIXED:
+					break;
+				case AVROMAP:
+					break;
+				case AVRORECORD:
+					break;
+				case AVROSTGEOMETRY:
+					break;
+				case AVROSTPOINT:
+					break;
+				default:
+					break;
+	    		
+	    		}
+	    	}
+		}
+
+		@Override
+	    public void rowProcessed(Object[] row, ParsingContext context) {
+			logger.debug("parsing record {}", row);
+			String rownum = String.valueOf(rownumber);
+			JexlRecord valuerecord = new JexlRecord(schemahandler.getValueSchema());
+			valuerecord.put(SchemaConstants.SCHEMA_COLUMN_SOURCE_SYSTEM, producername);
+			valuerecord.put("FILENAME", file.getName());
+			valuerecord.put(SchemaConstants.SCHEMA_COLUMN_SOURCE_ROWID, rownum);
+			
+			for (int i=0; i<context.headers().length; i++) {
+				String header = context.headers()[i];
+				valuerecord.put(header, row[i]);
+			}
+			
+
+			logger.debug("Queueing record {}", valuerecord.toString());
+			queueRecord(topichandler, null, schemahandler, valuerecord, RowType.INSERT, 
+					rownum, producername, transactionid);
+			rownumber++;
+	    }
+	    
+	    public void setFile(File file) {
+	    	this.file = file;
+	    }
+
+		public void setTransactionID(String transactionid) {
+			this.transactionid = transactionid;
+		}
+
+	}
 
 	private class FileParser extends ThreadBasedController<FileParser> {
 		
-		public FileParser() {
-			super("FileParser");
+		public FileParser(String name) {
+			super(name);
 		}
 
 		@Override
 		protected void runUntilError() {
+			CsvParserSettings settings = format.getSettings();
+			AvroRowProcessor rowProcessor = new AvroRowProcessor();
+			settings.setProcessor(rowProcessor);
 			while (isRunning()) {
 				filelist = readDirectory();
 				if (filelist != null) {
 					for (File file : filelist) {
 						logger.info("Reading File {}", file.getName());
+						rowProcessor.setFile(file);
 						String transactionid = file.getName();
+						rowProcessor.setTransactionID(transactionid);
 						queueBeginTransaction(transactionid, file);
 						try (FileInputStream in = new FileInputStream(file); ) {
-							CsvParserSettings settings = format.getSettings();
-							
 							CsvParser parser = new CsvParser(settings);
-							parser.beginParsing(in, FilePreviewService.getCharset(format));
-							Record r;
-							int rownumber = 1;
-							while ((r = parser.parseNextRecord()) != null) {
-								logger.info("parsing record {}", r.toString());
-								String rownum = String.valueOf(rownumber);
-								JexlRecord valuerecord = new JexlRecord(schemahandler.getValueSchema());
-								valuerecord.put(SchemaConstants.SCHEMA_COLUMN_SOURCE_SYSTEM, producername);
-								valuerecord.put("FILENAME", file.getName());
-								valuerecord.put(SchemaConstants.SCHEMA_COLUMN_SOURCE_ROWID, rownum);
-								
-								for (String header : settings.getHeaders()) {
-									valuerecord.put(header, r.getString(header));
-								}
-								
-
-								logger.info("Queueing record {}", valuerecord.toString());
-								queueRecord(topichandler, null, schemahandler, valuerecord, RowType.INSERT, 
-										rownum, producername, transactionid);
-								rownumber++;
-							}
+							parser.parse(in, FilePreviewService.getCharset(format));
 							queueCommitRecord();
 						} catch (IOException e) {
 							logger.info("FileProducer got an IOException", e);
@@ -173,10 +285,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 					}
 				}
 				waitTransactionsCompleted();
-				try {
-					Thread.sleep(getPollingInterval());
-				} catch (InterruptedException e) {
-				}
+				sleep(getPollingInterval()*1000L);
 			}
 		}
 
@@ -191,6 +300,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 
 		@Override
 		protected void stopThreadControllerImpl(ControllerExitType exittype) {
+			
 		}
 
 		@Override

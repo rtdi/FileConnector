@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import javax.xml.bind.annotation.XmlTransient;
 
@@ -16,16 +17,33 @@ import org.apache.avro.Schema.Parser;
 import org.apache.avro.Schema.Type;
 import org.apache.commons.text.StringEscapeUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.univocity.parsers.csv.CsvParserSettings;
 
 import io.rtdi.bigdata.connector.connectorframework.controller.ConnectionController;
+import io.rtdi.bigdata.connector.connectorframework.entity.KeyValue;
 import io.rtdi.bigdata.connector.connectorframework.exceptions.ConnectorCallerException;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroBoolean;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroByte;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroCLOB;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroDate;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroDecimal;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroDouble;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroFloat;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroInt;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroLong;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroNCLOB;
 import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroNVarchar;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroShort;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroTimestamp;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroTimestampMicros;
 import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroType;
 import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroVarchar;
+import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.IAvroDatatype;
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.SchemaException;
 import io.rtdi.bigdata.connector.pipeline.foundation.recordbuilders.AvroField;
 import io.rtdi.bigdata.connector.pipeline.foundation.recordbuilders.ValueSchema;
+import io.rtdi.bigdata.connector.pipeline.foundation.utils.IOUtils;
 
 public class EditSchemaData {
 	private static final String FILENAMEPATTERN = "FILENAMEPATTERN";
@@ -36,6 +54,7 @@ public class EditSchemaData {
 	private static final String QUOTE = "QUOTE";
 	private static final String QUOTEESCAPE = "QUOTEESCAPE";
 	private static final String ISHEADEREXTRACTIONENABLED = "ISHEADEREXTRACTIONENABLED";
+	private static final String FORMATPATTERNS = "FORMATPATTERNS";
 	
 	private String schemaname;
 	private String description;
@@ -45,6 +64,7 @@ public class EditSchemaData {
 	private CsvParserSettings settings = new CsvParserSettings();
 	
 	private List<ColumnDefinition> columns;
+	private List<KeyValue> datatypes;
 	
 	private static String defaultcharset = Charset.defaultCharset().name();
 	private static String defaultlocale = Locale.getDefault().toString();
@@ -58,18 +78,35 @@ public class EditSchemaData {
 		setLineSeparator("\n");
 		setQuote("\"");
 		setQuoteEscape("\"");
+		datatypes = new ArrayList<KeyValue>();
+		datatypes.add(new KeyValue(AvroCLOB.NAME));
+		datatypes.add(new KeyValue(AvroNCLOB.NAME));
+		datatypes.add(new KeyValue(AvroNVarchar.NAME + "( )"));
+		datatypes.add(new KeyValue(AvroVarchar.NAME + "( )"));
+		datatypes.add(new KeyValue(AvroByte.NAME));
+		datatypes.add(new KeyValue(AvroDecimal.NAME+ "( , )"));
+		datatypes.add(new KeyValue(AvroDouble.NAME));
+		datatypes.add(new KeyValue(AvroFloat.NAME));
+		datatypes.add(new KeyValue(AvroInt.NAME));
+		datatypes.add(new KeyValue(AvroLong.NAME));
+		datatypes.add(new KeyValue(AvroShort.NAME));
+		datatypes.add(new KeyValue(AvroDate.NAME));
+		datatypes.add(new KeyValue(AvroTimestamp.NAME));
+		datatypes.add(new KeyValue(AvroTimestampMicros.NAME));
+		datatypes.add(new KeyValue(AvroBoolean.NAME));
 	}
 
 	public EditSchemaData(File schemafile) throws IOException {
 		this();
 		if (!schemafile.exists()) {
 			throw new ConnectorCallerException(
-					"The file with the schema definition cannot be found", 
+					"The file with the schema definition cannot be found", null,
 					"In the webapp root directory, the schema subdirectory, all *.avsc file are stored", 
 					schemafile.getPath());
 		}
 		if (!schemafile.canRead()) {
-			throw new ConnectorCallerException("The file with the schema definition exists but cannot be read by the OS user", null, schemafile.getPath());
+			throw new ConnectorCallerException("The file with the schema definition exists but cannot be read by the OS user", null,
+					"Check user running tomcat and its permissions", schemafile.getPath());
 		}
 		Schema schema = new Parser().parse(schemafile);
 		setSchemaname(schema.getName());
@@ -86,7 +123,9 @@ public class EditSchemaData {
 		for (Field f : schema.getFields()) {
 			String name = AvroField.getOriginalName(f);
 			if (!AvroField.isInternal(f)) {
-				columns.add(new ColumnDefinition(name, AvroType.getAvroDatatype(f.schema()), f.schema().getType() == Type.UNION));
+				ColumnDefinition c = new ColumnDefinition(name, AvroType.getAvroDataType(IOUtils.getBaseSchema(f.schema())), f.schema().getType() == Type.UNION);
+				c.setPatterns(f.getProp(FORMATPATTERNS));
+				columns.add(c);
 			}
 		}
 		setColumns(columns);
@@ -117,7 +156,7 @@ public class EditSchemaData {
 			if (Charset.availableCharsets().containsKey(charset)) {
 				this.charset = charset;
 			} else {
-				throw new ConnectorCallerException("The provided charset is not known to this system", null, charset);
+				throw new ConnectorCallerException("The provided charset is not known to this system", null, "Maybe change to a different character set?", charset);
 			}
 		} else {
 			this.charset = null;
@@ -140,7 +179,7 @@ public class EditSchemaData {
 			if (found) {
 				this.locale = locale;
 			} else {
-				throw new ConnectorCallerException("The provided locale is not known to this system", null, locale);
+				throw new ConnectorCallerException("The provided locale is not known to this system", null, "Maybe change to a different locale?", locale);
 			}
 		} else {
 			this.locale = null;
@@ -234,28 +273,34 @@ public class EditSchemaData {
 		}
 	}
 	
-	public void updateHeader(String[] headers) {
-		settings.setHeaders(headers);
-		if (columns == null) {
+	public void updateHeader(String[] headers, List<String[]> rows, boolean reset) {
+		if (columns == null || reset) {
 			columns = new ArrayList<>();
-			for (String name : headers) {
-				columns.add(new ColumnDefinition(name, AvroNVarchar.create(100).toString(), true));
+			for (int i=0; i<headers.length; i++) {
+				String name = headers[i];
+				columns.add(new ColumnDefinition(name, rows, i, true));
 			}
+			settings.setHeaders(headers);
 		} else {
 			for (int i=0; i<headers.length; i++) {
 				if (i<columns.size()) {
-					ColumnDefinition c = columns.get(i);
-					c.name = headers[i];
+					// do not change the column definitions but adopt the header name to the entered one
+					headers[i] = columns.get(i).getName();
 				} else {
-					columns.add(new ColumnDefinition(headers[i], AvroNVarchar.create(100).toString(), true));
+					columns.add(new ColumnDefinition(headers[i], rows, i, true));
 				}
 			}
+			while (columns.size() > headers.length) {
+				columns.remove(columns.size()-1);
+			}
+			settings.setHeaders(headers);
 		}
 	}
-
+	
 	public void writeSchema(File schemafile) throws SchemaException, IOException {
+		String avsc = createSchema().toString(true);
 		try (FileWriter out = new FileWriter(schemafile);) {
-			out.write(createSchema().toString(true));
+			out.write(avsc);
 		}
 	}
 
@@ -280,10 +325,15 @@ public class EditSchemaData {
 			schema.add("col1", AvroNVarchar.getSchema(1000), null, true); // Avro Schemas need at least one field
 		} else {
 			for (ColumnDefinition column : columns) {
-				Schema dt = AvroType.getSchemaFromDataTypeRepresentation(column.datatype);
-				if (dt != null) {
-					schema.add(column.name, dt, null, column.optional);
+				
+				Schema dt = column.datatype.getDatatypeSchema();
+				if (dt == null) {
+					dt = AvroNVarchar.getSchema(1000);
 				}
+				if (column.getPatterns() != null) {
+					dt.addProp(FORMATPATTERNS, column.getPatterns());
+				}
+				schema.add(column.name, dt, null, column.optional);
 			}
 		}
 		schema.build();
@@ -306,20 +356,49 @@ public class EditSchemaData {
 		return getSchemaDirectory(rootdir);
 	}
 
-	
+	public List<KeyValue> getDatatypes() {
+		return datatypes;
+	}
+
+	public void setDatatypes(List<KeyValue> datatypes) {
+		// do nothing
+	}
+
 	public static class ColumnDefinition {
 
 		private String name;
-		private String datatype;
+		private IAvroDatatype datatype;
 		private boolean optional = true;
+		private String patterns;
+
+		private AvroType typeaggregation = null;
+		private int lengthaggregation = 0;
+		private int scaleaggregation = 0;
+        private static Pattern decimal = Pattern.compile("[-]?\\d*[\\.\\,]\\d*");
+        private static Pattern integer = Pattern.compile("[-]?\\d*");
+        private static Pattern date_yyyymmdd = Pattern.compile("\\d{4}\\-\\d{2}\\-\\d{2}");
+        private static Pattern date_yyyymmdd2 = Pattern.compile("\\d{4}\\.\\d{2}\\.\\d{2}");
+        private static Pattern timestamp_rfc = Pattern.compile("\\d{4}-\\d{2}-\\d{2}[T]\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{4})");
+        private static Pattern timestamp_simple = Pattern.compile("\\d{4}-\\d{2}-\\d{2}[ ]\\d{2}:\\d{2}:\\d{2}");
+        private int integermaxlength = String.valueOf(Integer.MAX_VALUE).length();
 
 		public ColumnDefinition() {
 		}
 		
-		public ColumnDefinition(String header, String datatype, boolean optional) {
+		public ColumnDefinition(String header, IAvroDatatype datatype, boolean optional) {
 			this.name = header;
 			this.datatype = datatype;
 			this.optional = optional;
+		}
+
+		public ColumnDefinition(String header, List<String[]> rows, int columnindex, boolean optional) {
+			this.name = header;
+			this.optional = optional;
+			for (int r = 0; r<rows.size(); r++) {
+				String value = rows.get(r)[columnindex];
+				mergeValue(value);
+			}
+			this.datatype = AvroType.getDataType(typeaggregation, lengthaggregation, scaleaggregation);
 		}
 
 		public String getName() {
@@ -331,11 +410,11 @@ public class EditSchemaData {
 		}
 
 		public String getDatatype() {
-			return datatype;
+			return datatype.toString();
 		}
 
 		public void setDatatype(String datatypestring) {
-			this.datatype = datatypestring;
+			this.datatype = AvroType.getDataTypeFromString(datatypestring);
 		}
 
 		public boolean isOptional() {
@@ -346,6 +425,74 @@ public class EditSchemaData {
 			this.optional = optional;
 		}
 		
-	}
+		@JsonIgnore
+		public IAvroDatatype getAvroDatatype() {
+			return datatype;
+		}
+		
+		public String getPatterns() {
+			return patterns;
+		}
 
+		public void setPatterns(String patterns) {
+			this.patterns = patterns;
+		}
+		
+		public void mergeValue(String value) {
+			if (value != null) {
+				if (lengthaggregation < value.length()) {
+					lengthaggregation = value.length();
+				}
+		        if (decimal.matcher(value).matches()) {
+		        	mergeType(AvroType.AVRODECIMAL);
+		        	int s = value.substring(value.indexOf('.')).length();
+		        	if (scaleaggregation < s) {
+		        		scaleaggregation = s;
+		        	}
+		        } else if (integer.matcher(value).matches()) {
+		        	if (lengthaggregation <= integermaxlength) {
+		        		mergeType(AvroType.AVROINT);
+		        	} else {
+		        		mergeType(AvroType.AVROLONG);
+		        	}
+		        } else if (date_yyyymmdd.matcher(value).matches()) {
+		        	mergeType(AvroType.AVRODATE);
+		        	addPattern("yyyy-MM-dd");
+		        } else if (date_yyyymmdd2.matcher(value).matches()) {
+		        	mergeType(AvroType.AVRODATE);
+		        	addPattern("yyyy.MM.dd");
+		        } else if (timestamp_rfc.matcher(value).matches()) {
+		        	mergeType(AvroType.AVROTIMESTAMPMILLIS);
+		        	addPattern("yyyy-MM-ddTHH:mm:ssZ");
+		        } else if (timestamp_simple.matcher(value).matches()) {
+		        	mergeType(AvroType.AVROTIMESTAMPMILLIS);
+		        	addPattern("yyyy-MM-dd HH:mm:ss");
+		        } else if (lengthaggregation >= 5000) {
+		        	mergeType(AvroType.AVRONCLOB);
+		        } else {
+		        	mergeType(AvroType.AVRONVARCHAR);
+		        }
+			}
+		}
+		
+		private void addPattern(String text) {
+			if (patterns == null) {
+				patterns = text;
+			} else {
+				patterns += "\r\n" + text;
+			}
+		}
+		
+		private void mergeType(AvroType valuetype) {
+        	if (typeaggregation == null) {
+        		typeaggregation = valuetype;
+        	} else if (typeaggregation == valuetype) {
+        		// do nothing
+        	} else {
+        		typeaggregation = typeaggregation.aggregate(valuetype);
+        	}
+		}
+
+	}
+	
 }

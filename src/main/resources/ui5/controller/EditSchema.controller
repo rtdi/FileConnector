@@ -17,10 +17,12 @@ init : function() {
 	this.getView().setModel(oModel);
 
 	var oCharsetModel = new JSONModel();
+	oCharsetModel.setSizeLimit(1000);
 	oCharsetModel.loadData("../rest/charsets");
 	this.getView().setModel(oCharsetModel, "charsets");
 
 	var oLocaleModel = new JSONModel();
+	oLocaleModel.setSizeLimit(1000);
 	oLocaleModel.loadData("../rest/locales");
 	this.getView().setModel(oLocaleModel, "locales");
 
@@ -29,8 +31,7 @@ init : function() {
 	oStateModel.setProperty("/breadcrumbs", [ 
 		{"text" : "Homepage", "link" : "./Home"}, 
 		{"text" : "Connections", "link" : "./Connections"}, 
-		{"text" : "Schemas", "link" : "./Browse?connectionname=" + encodeURI(sConnectionname) }, 
-		{"text" : "File Schemas", "link" : "./ListSchemas?connectionname=" + encodeURI(sConnectionname) }
+		{"text" : "Schemas", "link" : "./Browse?connectionname=" + encodeURI(sConnectionname) }
 	] );
 },
 edit : function(oEvent) {
@@ -46,15 +47,15 @@ save : function(oEvent) {
 		xmlhttp.onreadystatechange = function() {
 		    if (xmlhttp.readyState == 4) {
 		    	if (xmlhttp.status == 200) {
-		        	alert(xmlhttp.responseText);
+		        	sap.m.MessageToast.show("Saved");
 		    	} else {
-		    		alert(xmlhttp.responseText);
+		        	sap.m.MessageToast.show("Failed to save with error: " + xmlhttp.responseText);
 		    	}
 		    }
 		}
 		xmlhttp.send(oModel.getJSON());
 	} else {
-		alert("No name of the schema entered");
+		sap.m.MessageToast.show("No name of the schema entered, cannot save");
 	}
 },
 cancel : function(oEvent) {
@@ -90,8 +91,9 @@ onPressGuessSettings : function(oEvent) {
 		    if (xmlhttp.readyState == 4) {
 		    	if (xmlhttp.status == 200) {
 					oModel.setJSON(xmlhttp.responseText);
+					that.readparsed();
 		    	} else {
-		    		alert(xmlhttp.responseText);
+		        	sap.m.MessageToast.show("Guessing the settings failed with error: " + xmlhttp.responseText);
 		    	}
 		    }
 	    }
@@ -115,7 +117,7 @@ readraw : function() {
 					oDataModel.setJSON(xmlhttp.responseText);
 		        	that.getView().setModel(oDataModel, "rawdata");
 		    	} else {
-		    		alert(xmlhttp.responseText);
+		        	sap.m.MessageToast.show("Redraw failed with error: " + xmlhttp.responseText);
 		    	}
 		    }
 	    }
@@ -138,8 +140,9 @@ readparsed : function() {
 					var oDataModel = new JSONModel();
 					oDataModel.setJSON(xmlhttp.responseText);
 		        	that.getView().setModel(oDataModel, "parseddata");
+		        	oModel.setProperty("/columns", oDataModel.getProperty("/columns"));
 		    	} else {
-		    		alert(xmlhttp.responseText);
+		        	sap.m.MessageToast.show("Refresh failed with error: " + xmlhttp.responseText);
 		    	}
 		    }
 	    }
@@ -156,10 +159,27 @@ onDataFileUpdateFinished : function(oEvent) {
 },
 columnFactory : function(sId, oContext) {
 	var oModel = this.getView().getModel();
-	var sName = oContext.getProperty("columnId");
+	var sName = oContext.getProperty("name");
 
-	return new sap.ui.table.Column(sId, {
-		label: new sap.m.Label({ text: sName }),
-		template: new sap.m.Text({text: {path: "parseddata>" + sName}})
+	var oItemTemplate = new sap.ui.core.Item({
+    	text : '{value}'
 	});
+	var oDatatypeSelector = new sap.m.ComboBox({value: "{datatype}", width: "150px" });
+	oDatatypeSelector.bindItems("/datatypes", oItemTemplate);
+	
+	return new sap.m.Column(sId+"-col", {
+		header: new sap.m.Label({ text: "{name}" }),
+		footer: oDatatypeSelector
+	});
+},
+rowFactory : function(sId, oContext) {
+	var oModel = this.getView().getModel();
+	var oTable = this.getView().byId("CSVTable");
+	var aColumns = oModel.getProperty("/columns");
+
+	var row = new sap.m.ColumnListItem(sId+"-row");
+	for( var i = 0; i < aColumns.length; i++) {
+		row.addCell(new sap.m.Text({text: {path: "parseddata>" + aColumns[i].name}, wrapping: false }));
+	}
+	return row;
 }

@@ -23,7 +23,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import com.univocity.parsers.common.processor.ObjectRowListProcessor;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
@@ -37,6 +36,7 @@ import io.rtdi.bigdata.connector.connectorframework.servlet.ServletSecurityConst
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.PropertiesException;
 import io.rtdi.bigdata.fileconnector.FileConnectionProperties;
 import io.rtdi.bigdata.fileconnector.entity.EditSchemaData;
+import io.rtdi.bigdata.fileconnector.entity.EditSchemaData.ColumnDefinition;
 
 @Path("/")
 public class FilePreviewService {
@@ -91,12 +91,12 @@ public class FilePreviewService {
 				settings.detectFormatAutomatically();
 				settings.setNumberOfRecordsToRead(30);
 				CsvParser parser = new CsvParser(settings);
-				parser.parseAll(in);
+				List<String[]> rows = parser.parseAll(in);
 				CsvFormat detectedFormat = parser.getDetectedFormat();
 				settings.setFormat(detectedFormat);
 				
 				String[] cols = parser.getRecordMetadata().headers();
-				format.updateHeader(cols);
+				format.updateHeader(cols, rows, true);
 			}
 			return Response.ok(format).build();
 		} catch (Exception e) {
@@ -111,9 +111,9 @@ public class FilePreviewService {
 		String path = props.getRootDirectory() + File.separatorChar + filename;
 		File file = new File(path);
 		if (!file.exists()) {
-			throw new ConnectorCallerException("file not found");
+			throw new ConnectorCallerException("file not found", null, "The requested file does not exist", path);
 		} else if (!file.isFile()) {
-			throw new ConnectorCallerException("path exists but is no file");
+			throw new ConnectorCallerException("path exists but is no file", null, "The requested path points to a directory", path);
 		} else {
 			return file;
 		}
@@ -128,7 +128,7 @@ public class FilePreviewService {
 	}
 	
 	public static class ParsedData {
-		private List<TableColumn> columns;
+		private List<ColumnDefinition> columns;
 		private List<Map<String, String>> rows;
 
 		public ParsedData() {
@@ -139,65 +139,34 @@ public class FilePreviewService {
 				CsvParserSettings settings = format.getSettings();
 				settings.setNumberOfRecordsToRead(30);
 				
-				ObjectRowListProcessor rowprocessor = new ObjectRowListProcessor();
-				settings.setProcessor(rowprocessor);
-									
+				settings.setHeaders((String[]) null); // The parser defines the columns and is not using them
 				CsvParser parser = new CsvParser(settings);
-				parser.parse(in, getCharset(format));
-				List<Object[]> result = rowprocessor.getRows();
+				List<String[]> result = parser.parseAll(in, getCharset(format));
 				String[] cols = parser.getRecordMetadata().headers();
-				columns = new ArrayList<>();
-				if (cols != null) {
-					for (String col : cols) {
-						columns.add(new TableColumn(col));
-					}
-				} else {
-					// Necessary?
-				}
+				format.updateHeader(cols, result, false);
+				columns = format.getColumns();
 				if (result != null) {
 					rows = new ArrayList<>();
-					for (Object[] row : result) {
+					for (String[] row : result) {
 						Map<String, String> value = new HashMap<>();
 						for (int i=0; i<row.length && i<columns.size(); i++) {
 							if (row[i] != null) {
-								value.put(columns.get(i).columnid, row[i].toString());
+								value.put(columns.get(i).getName(), row[i]);
 							}
 						}
-
 						rows.add(value);
 					}
 				}
+
 			}
 		}
 
-		public List<TableColumn> getColumns() {
+		public List<ColumnDefinition> getColumns() {
 			return columns;
 		}
 
 		public List<Map<String, String>> getRows() {
 			return rows;
-		}
-
-	}
-	
-	public static class TableColumn {
-		private String columnid;
-		private String columnname;
-		
-		public TableColumn() {
-		}
-		
-		public TableColumn(String col) {
-			this.columnid = col;
-			this.columnname = col;
-		}
-
-		public String getColumnId() {
-			return columnid;
-		}
-
-		public String getColumnName() {
-			return columnname;
 		}
 
 	}

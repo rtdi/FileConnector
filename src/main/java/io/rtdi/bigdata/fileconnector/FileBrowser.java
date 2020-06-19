@@ -33,14 +33,14 @@ public class FileBrowser extends BrowsingService<FileConnectionProperties> {
 	 * @throws IOException in case the schema directory cannot be used
 	 */
 	@Override
-	protected void open() throws IOException {
+	public void open() throws IOException {
 		String osuser = System.getProperty("user.name");
 		schemadir = EditSchemaData.getSchemaDirectory(controller);
 		if (!schemadir.exists()) {
 			schemadir.mkdirs();
 		}
 		if (!schemadir.isDirectory()) {
-			throw new PropertiesException("The schema directory exist but is not a directory");
+			throw new PropertiesException("The schema directory exists but is not a directory");
 		}
 		if (!schemadir.canRead()) {
 			throw new PropertiesException("The schema directory cannot be read by the OS user \"" + osuser + "\"");
@@ -62,8 +62,13 @@ public class FileBrowser extends BrowsingService<FileConnectionProperties> {
 		for (File file : candidates) {
 			if (!file.isDirectory() && file.getName().endsWith(".avsc")) {
 				String schemaname = file.getName().substring(0, file.getName().length()-5);
-				Schema schema = new Parser().parse(file);
-				files.add(new TableEntry(schemaname, TableType.VIEW, schema.getDoc()));
+				try {
+					Schema schema = new Parser().parse(file);
+					files.add(new TableEntry(schemaname, TableType.VIEW, schema.getDoc()));
+				} catch (IOException e) {
+					files.add(new TableEntry(schemaname, TableType.ERROR, "INVALID"));
+					logger.error("Cannot parse the Schema definition file", e);
+				}
 			}
 		}
 		return files;

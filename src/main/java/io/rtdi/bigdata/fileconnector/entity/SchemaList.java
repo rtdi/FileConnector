@@ -22,7 +22,7 @@ public class SchemaList {
 		if (!dir.exists()) {
 			dir.mkdirs();
 		} else if (!dir.isDirectory()) {
-			throw new ConnectorCallerException("The schema path exists but is a file, not a directory", null, dir.toString());
+			throw new ConnectorCallerException("The schema path exists but is a file, not a directory", null, "The provided path has to be a directory, not a file", dir.toString());
 		}
 		File[] candidates = dir.listFiles();
 		Arrays.sort(candidates);

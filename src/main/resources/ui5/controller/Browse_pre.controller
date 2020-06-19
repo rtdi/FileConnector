@@ -1,4 +1,0 @@
-onPressFileSchema : function(oEvent) {
-	var sConnectionname = jQuery.sap.getUriParameters().get("connectionname");
-	window.location.href = 'ListSchemas?connectionname=' + encodeURI(sConnectionname);
-},

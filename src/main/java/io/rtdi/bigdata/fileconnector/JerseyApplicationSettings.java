@@ -2,9 +2,9 @@ package io.rtdi.bigdata.fileconnector;
 
 import io.rtdi.bigdata.connector.connectorframework.JerseyApplication;
 
-public class JerseyApplicationFileConnector extends JerseyApplication {
+public class JerseyApplicationSettings extends JerseyApplication {
 
-	public JerseyApplicationFileConnector() {
+	public JerseyApplicationSettings() {
 		super();
 	}
 

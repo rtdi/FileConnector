@@ -2,8 +2,9 @@ showFooter : function() {
 	return false;
 },
 init : function() {
+	var sConnectionname = jQuery.sap.getUriParameters().get("connectionname");
 	var oModel = new JSONModel();
-	oModel.loadData("../rest/files", null, false);
+	oModel.loadData("../rest/files/" + encodeURI(sConnectionname), null, false);
 	oModel.setProperty("/title", oModel.getProperty("Files"));
 	this.getView().setModel(oModel);
 	var oStateModel = this.getView().getModel("state");
