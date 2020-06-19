@@ -51,6 +51,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: target/HanaAppContainer.war
-        asset_name: HanaAppContainer.war
+        asset_path: target/fileconnector.war
+        asset_name: fileconnector.war
         asset_content_type: application/war
