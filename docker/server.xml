@@ -104,10 +104,10 @@
                maxThreads="150" SSLEnabled="true" >
         <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
         <SSLHostConfig>
-            <Certificate certificateKeyFile="security/ssl/localhost-rsa-key.pem"
-                         certificateFile="security/ssl/localhost-rsa-cert.pem"
-						 certificateKeyPassword="changeit"
-                         type="RSA" />
+		<Certificate certificateKeyFile="conf/security/ssl/localhost-rsa-key.pem"
+			certificateFile="conf/security/ssl/localhost-rsa-cert.pem"
+			certificateKeyPassword="changeit"
+                        type="RSA" />
         </SSLHostConfig>
     </Connector>
     <!-- Define an AJP 1.3 Connector on port 8009 -->
