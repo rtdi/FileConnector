@@ -2,8 +2,8 @@ FROM rtdi/connectorrootapp
 
 LABEL maintainer="info@rtdi.io"
 
-ADD docker/global.properties conf/rtdiconfig/FileConnector/
-ADD target/fileconnector.war ./webapps/
+ADD https://raw.githubusercontent.com/rtdi/RTDIFileConnector/master/docker/global.properties conf/rtdiconfig/FileConnector/
+ADD https://github.com/rtdi/RTDIFileConnector/releases/latest/download/fileconnector.war ./webapps/
 
 EXPOSE 8080
 EXPOSE 8443
