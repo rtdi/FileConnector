@@ -14,7 +14,9 @@ import java.util.regex.PatternSyntaxException;
 
 import org.apache.avro.Schema;
 
+import com.univocity.parsers.common.DataProcessingException;
 import com.univocity.parsers.common.ParsingContext;
+import com.univocity.parsers.common.TextParsingException;
 import com.univocity.parsers.common.processor.ObjectRowProcessor;
 import com.univocity.parsers.conversions.Conversions;
 import com.univocity.parsers.csv.CsvParser;
@@ -77,7 +79,7 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 	public void startProducerChangeLogging() throws IOException {
 	}
 
-	public ThreadBasedController<?> getQueueProducer() {
+	public ThreadBasedController<?> getNewQueueProducer() {
 		return new FileParser(instance.getName());
 	}
 		
@@ -260,7 +262,7 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 		}
 
 		@Override
-		protected void runUntilError() {
+		protected void runUntilError() throws Exception {
 			CsvParserSettings settings = format.getSettings();
 			AvroRowProcessor rowProcessor = new AvroRowProcessor();
 			settings.setProcessor(rowProcessor);
@@ -272,16 +274,36 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 						rowProcessor.setFile(file);
 						String transactionid = file.getName();
 						rowProcessor.setTransactionID(transactionid);
-						queueBeginTransaction(transactionid, file);
-						try (FileInputStream in = new FileInputStream(file); ) {
-							CsvParser parser = new CsvParser(settings);
-							parser.parse(in, FilePreviewService.getCharset(format));
-							queueCommitRecord();
-						} catch (IOException e) {
-							logger.info("FileProducer got an IOException", e);
-							// TODO: error handling
+						try {
+							try (FileInputStream in = new FileInputStream(file); ) {
+								queueBeginTransaction(transactionid, file);
+								CsvParser parser = new CsvParser(settings);
+								parser.parse(in, FilePreviewService.getCharset(format));
+								queueCommitRecord();
+							} catch (IOException e) {
+								throw new ConnectorRuntimeException(
+										"IOException when parsing the file",
+										e,
+										"Check the format definitions with the file contents",
+										file.getAbsolutePath() + " # at line " + rowProcessor.rownumber);
+							} catch (DataProcessingException e) {
+								throw new ConnectorRuntimeException(
+										"Structural parsing of a row was correct but the row content triggered an exception",
+										e,
+										"Very likely the column value of this row did not match the format definition",
+										file.getAbsolutePath() + " # at line " + rowProcessor.rownumber);
+							} catch (TextParsingException e) {
+								throw new ConnectorRuntimeException(
+										"Structural parsing of a row failed",
+										e,
+										"Please check the corresponding data line",
+										file.getAbsolutePath() + " # at line " + rowProcessor.rownumber);
+							}
+						} catch (ConnectorRuntimeException e) {
+							errors.addError(e);
+							queueRollbackRecord();
+							renameToError(file);
 						}
-						
 					}
 				}
 				waitTransactionsCompleted();
@@ -321,6 +343,17 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 				Files.move(file.toPath(), newfile.toPath(), StandardCopyOption.ATOMIC_MOVE);
 			} catch (IOException e) {
 				throw new ConnectorRuntimeException("Cannot rename the file to .processed", e, null, transactionid);
+			}
+		}
+	}
+
+	public void renameToError(File file) throws ConnectorRuntimeException {
+		if (file != null) {
+			File newfile = new File(file.getAbsolutePath() + ".error");
+			try {
+				Files.move(file.toPath(), newfile.toPath(), StandardCopyOption.ATOMIC_MOVE);
+			} catch (IOException e) {
+				throw new ConnectorRuntimeException("Cannot rename the file to .error", e, null, null);
 			}
 		}
 	}

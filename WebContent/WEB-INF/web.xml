@@ -25,7 +25,8 @@
 	</servlet-mapping>
 	<security-constraint>
 		<web-resource-collection>
-			<url-pattern>/*</url-pattern>
+			<url-pattern>/ui5/*</url-pattern>
+			<url-pattern>/rest/*</url-pattern>
 		</web-resource-collection>
 		<auth-constraint>
 			<role-name>connectorview</role-name>
