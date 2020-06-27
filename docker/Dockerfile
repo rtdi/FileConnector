@@ -9,4 +9,4 @@ EXPOSE 8080
 EXPOSE 8443
 
 
-CMD ["catalina.sh", "run"]
+CMD ["appcontainer.sh"]
