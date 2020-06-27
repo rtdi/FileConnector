@@ -52,27 +52,27 @@ The complete solution consists of the following modules:
 * Optionally map the file format to an existing schema
 * Constantly scan for files in a given directory, parse them and send each line as one message. One file is one Kafka transaction.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Homepage.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Homepage.png" width="50%">
 
 ### Connect the Pipeline to Kafka
 
 The first step is to connect the application to a Kafka server, in this example Confluent Cloud.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-PipelineConfig.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-PipelineConfig.png" width="50%">
 
 
 ### Define a Connection
 
 A Connection represents a directory with the data files. Within one directory there can be many files, even with different formats.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Connection1.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Connection1.png" width="50%">
 
 
 ### Define the file format
 
 Each connection can have multiple file formats - schemas - defined. 
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Connection1-overview.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Connection1-overview.png" width="50%">
 
 When creating a new schema, the first screen defines the file global settings. A file format has a name, it matches certain file name patterns (in regular expression format), it has a character encoding and a language default.
 To help finding the proper values, if a file is found its contents will be shown as text information. This helps to set e.g. the correct character set.
@@ -83,25 +83,25 @@ Nore: Important characters in the [regular expression syntax](https://www.freefo
 
 Example: uscensus.*\.csv matches all files that start with the text "uscensus" and have the prefix ".csv".
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def1.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def1.png" width="50%">
 
 
 In the next tab the parsing information is defined. What is the line delimiter, the column separator, does the file have a header row, the data types for each column. To speed up the process the format can be guessed as well and then further refined.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def2.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def2.png" width="50%">
 
 The column definition tab is for the details about each column, primarily the format strings to be used when parsing e.g. date value.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def3.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def3.png" width="50%">
 
 
 ### Create a Producer
 
 A Producer stands for the process scanning for files matching a schema, reading the files and the lines and sending the data to a server topic.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Add-Producer.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Add-Producer.png" width="50%">
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Producer.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Producer.png" width="50%">
 
 
 ### Data content
@@ -109,7 +109,7 @@ A Producer stands for the process scanning for files matching a schema, reading 
 As the schema was not mapped to an actual server schema, the Producers create a schema on the server and sends the data.
 The payload contains all the columns plus some extra metadata about the file/row and is loaded as one Kafka transaction.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Data.png" width="25%">
+<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Data.png" width="50%">
 
 
 ### Extension points
