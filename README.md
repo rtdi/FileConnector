@@ -21,15 +21,21 @@ On any computer install the Docker Daemon - if it is not already - and download 
 
 Then start the image via docker run. For a quick test this command is sufficient
 
-    docker run -d -p 80:8080 --name fileconnector  rtdi/fileconnector
+    docker run -d -p 80:8080 --rm --name fileconnector  rtdi/fileconnector
 
 to expose a webserver at port 80 on the host running the container. Make sure to open the web page via the http prefix, as https needs more configuration.
 For example [http://localhost:80/](http://localhost:80/) might do the trick of the container is hosted on the same computer.
 
 The default login for this startup method is: **rtdi / rtdi!io**
 
-For proper start commands see the [ConnectorRootApp](https://github.com/rtdi/ConnectorRootApp) project, this application is using as foundation.
+The probably better start command is to mount two host directories into the container. In this example the host's /data/files contains all files to be loaded into Kafka and the /data/config is an (initially) empty directory where all settings made when configuring the connector will be stored permanently.
 
+    docker run -d -p 80:8080 --rm -v /data/files:/data/ -v /data/config:/usr/local/tomcat/conf/security    --name fileconnector  rtdi/fileconnector
+
+
+For proper start commands, especially https and security related, see the [ConnectorRootApp](https://github.com/rtdi/ConnectorRootApp) project, this application is based on.
+
+  
 ## Help!
 
 The source code of this project is available at [github](https://github.com/rtdi/RTDIFileConnector).
@@ -44,6 +50,7 @@ The complete solution consists of the following modules:
 * Define the file format setting via a UI; settings are stored as annotated AVRO schema files.
 * Optionally map the file format to an existing schema
 * Constantly scan for files in a given directory, parse them and send each line as one message. One file is one Kafka transaction.
+* Multiple producer instances allow parallel reading. Partitioning is based on the hash value of the file name.
 
 <img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Homepage.png" width="50%">
 
@@ -74,7 +81,7 @@ Note: Important characters in the [regular expression syntax](https://www.freefo
 - .* matching any character 0..n times
 - \. means a dot character by itself
 
-Example: uscensus.*\.csv matches all files that start with the text "uscensus" and have the prefix ".csv", e.g. uscensus_2010.csv would be found.
+Example: CENSUS.*\.csv matches all files that start with the text "CENSUS" and have the prefix ".csv", e.g. CENSUS_2018.csv would be found.
 
 <img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def1.png" width="50%">
 

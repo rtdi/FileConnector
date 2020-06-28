@@ -34,17 +34,17 @@
 		<dependency>
 			<groupId>io.rtdi.bigdata.connector</groupId>
 			<artifactId>webappfoundation</artifactId>
-			<version>0.9.11</version>
+			<version>0.9.12</version>
 		</dependency>
 		<dependency>
 			<groupId>io.rtdi.bigdata.connector</groupId>
 			<artifactId>pipelinehttp</artifactId>
-			<version>0.9.11</version>
+			<version>0.9.12</version>
 		</dependency>
 		<dependency>
 			<groupId>io.rtdi.bigdata.connector</groupId>
 			<artifactId>pipelinekafkatcp</artifactId>
-			<version>0.9.11</version>
+			<version>0.9.12</version>
 		</dependency>
 		<dependency>
 			<groupId>com.univocity</groupId>

@@ -301,6 +301,7 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 							}
 						} catch (ConnectorRuntimeException e) {
 							errors.addError(e);
+							logger.error(e);
 							queueRollbackRecord();
 							renameToError(file);
 						}
