@@ -22,16 +22,14 @@ import com.univocity.parsers.conversions.Conversions;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 
-import io.rtdi.bigdata.connector.connectorframework.ProducerQueuing;
+import io.rtdi.bigdata.connector.connectorframework.Producer;
 import io.rtdi.bigdata.connector.connectorframework.controller.ProducerInstanceController;
-import io.rtdi.bigdata.connector.connectorframework.controller.ThreadBasedController;
 import io.rtdi.bigdata.connector.connectorframework.exceptions.ConnectorRuntimeException;
 import io.rtdi.bigdata.connector.pipeline.foundation.SchemaConstants;
 import io.rtdi.bigdata.connector.pipeline.foundation.SchemaHandler;
 import io.rtdi.bigdata.connector.pipeline.foundation.TopicHandler;
 import io.rtdi.bigdata.connector.pipeline.foundation.avro.JexlGenericData.JexlRecord;
 import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.IAvroDatatype;
-import io.rtdi.bigdata.connector.pipeline.foundation.enums.ControllerExitType;
 import io.rtdi.bigdata.connector.pipeline.foundation.enums.RowType;
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.PropertiesException;
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.SchemaException;
@@ -39,7 +37,7 @@ import io.rtdi.bigdata.fileconnector.entity.EditSchemaData;
 import io.rtdi.bigdata.fileconnector.entity.EditSchemaData.ColumnDefinition;
 import io.rtdi.bigdata.fileconnector.rest.FilePreviewService;
 
-public class FileProducer extends ProducerQueuing<FileConnectionProperties, FileProducerProperties> {
+public class FileProducer extends Producer<FileConnectionProperties, FileProducerProperties> {
 
 	private long pollinterval;
 	private FilenameFilter filter;
@@ -79,10 +77,6 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 	public void startProducerChangeLogging() throws IOException {
 	}
 
-	public ThreadBasedController<?> getNewQueueProducer() {
-		return new FileParser(instance.getName());
-	}
-		
 	protected Schema createSchema(String sourceschemaname) throws SchemaException, IOException {
 		return format.createSchema();
 	}
@@ -132,7 +126,6 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 	public class AvroRowProcessor extends ObjectRowProcessor {
 		int rownumber = 1;
 		private File file;
-		private String transactionid;
 		
 	    public AvroRowProcessor() {
 	    	for (int i=0; i<format.getColumns().size(); i++) {
@@ -240,8 +233,12 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 			
 
 			logger.debug("Queueing record {}", valuerecord.toString());
-			queueRecord(topichandler, null, schemahandler, valuerecord, RowType.INSERT, 
-					rownum, producername, transactionid);
+			try {
+				addRow(topichandler, null, schemahandler, valuerecord, RowType.INSERT, 
+						rownum, producername);
+			} catch (IOException e) {
+				throw new DataProcessingException("Adding the row to the pipeline failed", row, e);
+			}
 			rownumber++;
 	    }
 	    
@@ -249,101 +246,62 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 	    	this.file = file;
 	    }
 
-		public void setTransactionID(String transactionid) {
-			this.transactionid = transactionid;
-		}
-
 	}
 
-	private class FileParser extends ThreadBasedController<FileParser> {
-		
-		public FileParser(String name) {
-			super(name);
-		}
-
-		@Override
-		protected void runUntilError() throws Exception {
-			CsvParserSettings settings = format.getSettings();
-			AvroRowProcessor rowProcessor = new AvroRowProcessor();
-			settings.setProcessor(rowProcessor);
-			while (isRunning()) {
-				filelist = readDirectory();
-				if (filelist != null) {
-					for (File file : filelist) {
-						logger.info("Reading File {}", file.getName());
-						rowProcessor.setFile(file);
-						String transactionid = file.getName();
-						rowProcessor.setTransactionID(transactionid);
-						try {
-							try (FileInputStream in = new FileInputStream(file); ) {
-								queueBeginTransaction(transactionid, file);
-								CsvParser parser = new CsvParser(settings);
-								parser.parse(in, FilePreviewService.getCharset(format));
-								queueCommitRecord();
-							} catch (IOException e) {
-								throw new ConnectorRuntimeException(
-										"IOException when parsing the file",
-										e,
-										"Check the format definitions with the file contents",
-										file.getAbsolutePath() + " # at line " + rowProcessor.rownumber);
-							} catch (DataProcessingException e) {
-								throw new ConnectorRuntimeException(
-										"Structural parsing of a row was correct but the row content triggered an exception",
-										e,
-										"Very likely the column value of this row did not match the format definition",
-										file.getAbsolutePath() + " # at line " + rowProcessor.rownumber);
-							} catch (TextParsingException e) {
-								throw new ConnectorRuntimeException(
-										"Structural parsing of a row failed",
-										e,
-										"Please check the corresponding data line",
-										file.getAbsolutePath() + " # at line " + rowProcessor.rownumber);
-							}
-						} catch (ConnectorRuntimeException e) {
-							errors.addError(e);
-							logger.error(e);
-							queueRollbackRecord();
-							renameToError(file);
-						}
+	@Override
+	public void poll() throws IOException {
+		CsvParserSettings settings = format.getSettings();
+		AvroRowProcessor rowProcessor = new AvroRowProcessor();
+		settings.setProcessor(rowProcessor);
+		filelist = readDirectory();
+		if (filelist != null) {
+			for (File file : filelist) {
+				logger.info("Reading File {}", file.getName());
+				rowProcessor.setFile(file);
+				String transactionid = file.getName();
+				try {
+					try (FileInputStream in = new FileInputStream(file); ) {
+						beginTransaction(transactionid);
+						CsvParser parser = new CsvParser(settings);
+						parser.parse(in, FilePreviewService.getCharset(format));
+						commitTransaction();
+						renameToProcessed(file);
+					} catch (IOException e) {
+						throw new ConnectorRuntimeException(
+								"IOException when parsing the file",
+								e,
+								"Check the format definitions with the file contents",
+								file.getAbsolutePath() + " # at line " + rowProcessor.rownumber);
+					} catch (DataProcessingException e) {
+						throw new ConnectorRuntimeException(
+								"Structural parsing of a row was correct but the row content triggered an exception",
+								e,
+								"Very likely the column value of this row did not match the format definition or pipeline connection interrupted",
+								file.getAbsolutePath() + " # at line " + rowProcessor.rownumber);
+					} catch (TextParsingException e) {
+						throw new ConnectorRuntimeException(
+								"Structural parsing of a row failed",
+								e,
+								"Please check the corresponding data line",
+								file.getAbsolutePath() + " # at line " + rowProcessor.rownumber);
 					}
+				} catch (ConnectorRuntimeException e) {
+					instance.addError(e);
+					logger.error(e);
+					abortTransaction();
+					renameToError(file);
 				}
-				waitTransactionsCompleted();
-				sleep(getPollingInterval()*1000L);
 			}
-		}
-
-		@Override
-		protected String getControllerType() {
-			return "FileParser";
-		}
-
-		@Override
-		protected void startThreadControllerImpl() throws IOException {
-		}
-
-		@Override
-		protected void stopThreadControllerImpl(ControllerExitType exittype) {
-			
-		}
-
-		@Override
-		protected void updateLandscape() {
-		}
-
-		@Override
-		protected void updateSchemaCache() {
 		}
 	}
 	
-	@Override
-	public void commit(String transactionid, Object payload) throws ConnectorRuntimeException {
-		File file = (File) payload;
+	public void renameToProcessed(File file) throws ConnectorRuntimeException {
 		if (file != null) {
 			File newfile = new File(file.getAbsolutePath() + ".processed");
 			try {
 				Files.move(file.toPath(), newfile.toPath(), StandardCopyOption.ATOMIC_MOVE);
 			} catch (IOException e) {
-				throw new ConnectorRuntimeException("Cannot rename the file to .processed", e, null, transactionid);
+				throw new ConnectorRuntimeException("Cannot rename the file to .processed", e, null, file.getAbsolutePath());
 			}
 		}
 	}
@@ -393,6 +351,10 @@ public class FileProducer extends ProducerQueuing<FileConnectionProperties, File
 	        return matches;
 		}
 		
+	}
+
+	@Override
+	public void startProducerCapture() throws IOException {
 	}
 
 }
