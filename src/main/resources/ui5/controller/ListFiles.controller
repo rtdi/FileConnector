@@ -4,6 +4,10 @@ showFooter : function() {
 init : function() {
 	var sConnectionname = jQuery.sap.getUriParameters().get("connectionname");
 	var oModel = new JSONModel();
+	var that = this;
+	oModel.attachRequestFailed(function(oEvent) {
+		that.displayError(JSON.parse(oEvent.getParameter("responseText")));
+	});
 	oModel.loadData("../rest/files/" + encodeURI(sConnectionname), null, false);
 	oModel.setProperty("/title", oModel.getProperty("Files"));
 	this.getView().setModel(oModel);

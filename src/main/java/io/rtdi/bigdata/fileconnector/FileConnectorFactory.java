@@ -56,7 +56,7 @@ public class FileConnectorFactory extends ConnectorFactory<FileConnectionPropert
 	}
 
 	@Override
-	public ServiceProperties<?> createServiceProperties(String servicename) throws PropertiesException {
+	public ServiceProperties createServiceProperties(String servicename) throws PropertiesException {
 		return null;
 	}
 

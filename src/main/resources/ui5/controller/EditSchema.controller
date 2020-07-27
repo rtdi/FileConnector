@@ -4,6 +4,9 @@ showFooter : function() {
 init : function() {
 	var oModel = new JSONModel();
 	var that = this;
+	oModel.attachRequestFailed(function(oEvent) {
+		that.displayError(JSON.parse(oEvent.getParameter("responseText")));
+	});
 	var sSchemaname = jQuery.sap.getUriParameters().get("schemaname");
 	var sConnectionname = jQuery.sap.getUriParameters().get("connectionname");
 	if (sSchemaname == null) {
@@ -17,11 +20,17 @@ init : function() {
 	this.getView().setModel(oModel);
 
 	var oCharsetModel = new JSONModel();
+	oCharsetModel.attachRequestFailed(function(oEvent) {
+		that.displayError(JSON.parse(oEvent.getParameter("responseText")));
+	});
 	oCharsetModel.setSizeLimit(1000);
 	oCharsetModel.loadData("../rest/charsets");
 	this.getView().setModel(oCharsetModel, "charsets");
 
 	var oLocaleModel = new JSONModel();
+	oLocaleModel.attachRequestFailed(function(oEvent) {
+		that.displayError(JSON.parse(oEvent.getParameter("responseText")));
+	});
 	oLocaleModel.setSizeLimit(1000);
 	oLocaleModel.loadData("../rest/locales");
 	this.getView().setModel(oLocaleModel, "locales");
@@ -66,6 +75,10 @@ onFilenamePatternChange : function(oEvent) {
 	var pattern = oModel.getProperty("/filenamepattern");
 	var sConnectionname = jQuery.sap.getUriParameters().get("connectionname");
 	var oFileModel = new JSONModel();
+	var that = this;
+	oFileModel.attachRequestFailed(function(oEvent) {
+		that.displayError(JSON.parse(oEvent.getParameter("responseText")));
+	});
 	oFileModel.loadData("../rest/files/" + encodeURI(sConnectionname) + "/" + btoa(pattern) + "/100");
 	this.getView().setModel(oFileModel, "files");
 },

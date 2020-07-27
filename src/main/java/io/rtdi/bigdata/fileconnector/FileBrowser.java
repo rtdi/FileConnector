@@ -86,4 +86,10 @@ public class FileBrowser extends BrowsingService<FileConnectionProperties> {
 		return new File(dir);
 	}
 
+	@Override
+	public void validate() throws IOException {
+		open();
+		close();
+	}
+
 }

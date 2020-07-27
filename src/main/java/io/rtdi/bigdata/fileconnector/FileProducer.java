@@ -53,14 +53,14 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 		pollinterval = getProducerProperties().getPollInterval();
 		directory = new File(getConnectionProperties().getRootDirectory());
 		if (!directory.exists()) {
-			throw new PropertiesException("The specified root directory does not exist", "Check the connection properties this producer belongs to", null, directory.getAbsolutePath());
+			throw new PropertiesException("The specified root directory does not exist", "Check the connection properties this producer belongs to", directory.getAbsolutePath());
 		} else if (!directory.isDirectory()) {
-			throw new PropertiesException("The specified root directory exists but is not a directory", "Check the connection properties this producer belongs to", null, directory.getAbsolutePath());
+			throw new PropertiesException("The specified root directory exists but is not a directory", "Check the connection properties this producer belongs to", directory.getAbsolutePath());
 		}
 		String schemafilename = getProducerProperties().getSchemaFile();
 		try {
 			if (schemafilename == null) {
-				throw new PropertiesException("No schema file name specified", "check the producer settings", null, schemafilename);
+				throw new PropertiesException("No schema file name specified", "check the producer settings", schemafilename);
 			}
 			File schemadir = EditSchemaData.getSchemaDirectory(getConnectionController());
 			File schemafile = EditSchemaData.getSchemaFile(schemadir, schemafilename);
@@ -68,7 +68,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 			Pattern filepattern = Pattern.compile(format.getFilenamepattern());
 			filter = new FileFilter(filepattern);
 		} catch (PatternSyntaxException e) {
-			throw new PropertiesException("The filename pattern is not valid", "Check the pattern if it is a true regexp syntax", null, schemafilename);
+			throw new PropertiesException("The filename pattern is not valid", "Check the pattern if it is a true regexp syntax", schemafilename);
 		}
 		this.producername = getProducerProperties().getName();
 	}
@@ -90,9 +90,9 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 		String fileschemaname = getProducerProperties().getSchemaFile();
 		schemahandler = getSchemaHandler(fileschemaname);
 		if (topichandler == null) {
-			throw new PropertiesException("The specified target topic does not exist", "Check producer properties", null, getProducerProperties().getTargetTopic());
+			throw new PropertiesException("The specified target topic does not exist", "Check producer properties", getProducerProperties().getTargetTopic());
 		} else if (schemahandler == null) {
-			throw new PropertiesException("The specified target schema does not exist", "Check producer properties", null, getProducerProperties().getTargetTopic());
+			throw new PropertiesException("The specified target schema does not exist", "Check producer properties", getProducerProperties().getTargetTopic());
 		} else {
 			this.addTopicSchema(topichandler, schemahandler);
 		}
@@ -222,6 +222,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 			logger.debug("parsing record {}", row);
 			String rownum = String.valueOf(rownumber);
 			JexlRecord valuerecord = new JexlRecord(schemahandler.getValueSchema());
+			valuerecord.setSchemaId(schemahandler.getValueSchemaId());
 			valuerecord.put(SchemaConstants.SCHEMA_COLUMN_SOURCE_SYSTEM, producername);
 			valuerecord.put("FILENAME", file.getName());
 			valuerecord.put(SchemaConstants.SCHEMA_COLUMN_SOURCE_ROWID, rownum);
@@ -337,6 +338,8 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 		@Override
 		public boolean accept(File dir, String name) {
 			if (name.endsWith(".processed")) { // failsafe in case the pattern is something like .* 
+				return false;
+			} else if (name.endsWith(".error")) { // failsafe in case the pattern is something like .* 
 				return false;
 			}
 			Matcher matcher = filepattern.matcher(name);
