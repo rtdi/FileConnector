@@ -4,10 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.rtdi.bigdata.connector</groupId>
 	<artifactId>fileconnector</artifactId>
-	<version>0.9.25</version>
+	<version>0.9.28</version>
 	<packaging>war</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<io.rtdi.bigdata.connector.version>0.9.28</io.rtdi.bigdata.connector.version>
 	</properties>
 	<build>
 		<finalName>${project.artifactId}</finalName>
@@ -34,12 +35,12 @@
 		<dependency>
 			<groupId>io.rtdi.bigdata.connector</groupId>
 			<artifactId>webappfoundation</artifactId>
-			<version>0.9.22</version>
+			<version>${io.rtdi.bigdata.connector.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.rtdi.bigdata.connector</groupId>
 			<artifactId>pipelinekafkatcp</artifactId>
-			<version>0.9.22</version>
+			<version>${io.rtdi.bigdata.connector.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.univocity</groupId>
@@ -60,6 +61,7 @@
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
 			<version>4.0.1</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 </project>

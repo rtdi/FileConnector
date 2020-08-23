@@ -92,4 +92,10 @@ public class FileBrowser extends BrowsingService<FileConnectionProperties> {
 		close();
 	}
 
+	@Override
+	public void deleteRemoteSchemaOrFail(String remotename) throws IOException {
+		File schemafile = EditSchemaData.getSchemaFile(schemadir, remotename);
+		java.nio.file.Files.delete(schemafile.toPath());
+	}
+
 }

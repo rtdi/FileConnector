@@ -1,4 +1,4 @@
-package io.rtdi.bigdata.fileconnector;
+package io.rtdi.bigdata.fileconnector; 
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,6 +29,7 @@ import io.rtdi.bigdata.connector.connectorframework.exceptions.ConnectorRuntimeE
 import io.rtdi.bigdata.connector.pipeline.foundation.SchemaConstants;
 import io.rtdi.bigdata.connector.pipeline.foundation.SchemaHandler;
 import io.rtdi.bigdata.connector.pipeline.foundation.TopicHandler;
+import io.rtdi.bigdata.connector.pipeline.foundation.TopicName;
 import io.rtdi.bigdata.connector.pipeline.foundation.avro.JexlGenericData.JexlRecord;
 import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.IAvroDatatype;
 import io.rtdi.bigdata.connector.pipeline.foundation.enums.RowType;
@@ -85,7 +87,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 	public void createTopiclist() throws IOException {
 		topichandler = getTopic(getProducerProperties().getTargetTopic());
 		if (topichandler == null) {
-			topichandler = getPipelineAPI().getTopicOrCreate(getProducerProperties().getTargetTopic(), 1, (short) 1);
+			topichandler = getPipelineAPI().getTopicOrCreate(TopicName.create(getProducerProperties().getTargetTopic()), 1, (short) 1);
 		}
 		String fileschemaname = getProducerProperties().getSchemaFile();
 		schemahandler = getSchemaHandler(fileschemaname);
@@ -99,14 +101,15 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 	}
 
 	@Override
-	public String getLastSuccessfulSourceTransaction() throws IOException {
-		// The file producer does not "restart". It simply reads all files not renamed yet.
-		return null;
+	public long executeInitialLoad(String schemaname, String transactionid) throws IOException {
+		// Reads all files just as the realtime push does, hence nothing to do special here.
+		return 0;
 	}
 
 	@Override
-	public void initialLoad() throws IOException {
-		// Reads all files just as the realtime push does, hence nothing to do special here.
+	public String getCurrentTransactionId() throws IOException {
+		// The file producer does not "restart". It simply reads all files not renamed yet.
+		return "none";
 	}
 
 	@Override
@@ -250,22 +253,23 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 	}
 
 	@Override
-	public void poll() throws IOException {
+	public String poll(String from_transactionid) throws IOException {
 		CsvParserSettings settings = format.getSettings();
 		AvroRowProcessor rowProcessor = new AvroRowProcessor();
 		settings.setProcessor(rowProcessor);
 		filelist = readDirectory();
+		String transactionid = from_transactionid;
 		if (filelist != null) {
 			for (File file : filelist) {
 				logger.info("Reading File {}", file.getName());
 				rowProcessor.setFile(file);
-				String transactionid = file.getName();
+				transactionid = file.getName();
 				try {
 					try (FileInputStream in = new FileInputStream(file); ) {
-						beginTransaction(transactionid);
+						beginDeltaTransaction(transactionid, this.getProducerInstance().getInstanceNumber());
 						CsvParser parser = new CsvParser(settings);
 						parser.parse(in, FilePreviewService.getCharset(format));
-						commitTransaction();
+						commitDeltaTransaction();
 						renameToProcessed(file);
 					} catch (IOException e) {
 						throw new ConnectorRuntimeException(
@@ -288,12 +292,13 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 					}
 				} catch (ConnectorRuntimeException e) {
 					instance.addError(e);
-					logger.error(e);
+					logger.error("Poll ran into an exception", e);
 					abortTransaction();
 					renameToError(file);
 				}
 			}
 		}
+		return transactionid;
 	}
 	
 	public void renameToProcessed(File file) throws ConnectorRuntimeException {
@@ -358,6 +363,11 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 
 	@Override
 	public void startProducerCapture() throws IOException {
+	}
+
+	@Override
+	public List<String> getAllSchemas() {
+		return Collections.singletonList(schemahandler.getSchemaName().getName());
 	}
 
 }

@@ -18,7 +18,7 @@ public class SchemaList {
 
 	public SchemaList(ConnectorController connector) throws IOException {
 		files = new ArrayList<>();
-		File dir = new File(connector.getConnectorDirectory().getAbsolutePath() + File.separatorChar + ".." + File.separatorChar + "schemas");
+		File dir = new File(connector.getConnectorDirectory(), ".." + File.separatorChar + "schemas");
 		if (!dir.exists()) {
 			dir.mkdirs();
 		} else if (!dir.isDirectory()) {

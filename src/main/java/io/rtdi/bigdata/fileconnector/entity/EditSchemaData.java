@@ -109,7 +109,7 @@ public class EditSchemaData {
 					"Check user running tomcat and its permissions", schemafile.getPath());
 		}
 		Schema schema = new Parser().parse(schemafile);
-		setSchemaname(schema.getName());
+		setSchemaname(schema.getFullName());
 		setDescription(schema.getDoc());
 		setCharset(schema.getProp(CHARSET));
 		setLocale(schema.getProp(LOCALE));
@@ -341,19 +341,15 @@ public class EditSchemaData {
 	}
 
 	public static File getSchemaFile(File schemadir, String schemaname) {
-		String schemafilepath = schemadir.getAbsolutePath() + File.separatorChar + schemaname + ".avsc";
-		return new File(schemafilepath);
+		return new File(schemadir, schemaname + ".avsc");
 	}
 	
 	public static File getSchemaDirectory(File rootdirectory) {
-		String schemapath = rootdirectory.getAbsolutePath() + File.separatorChar + "schemas";
-		return new File(schemapath);
+		return new File(rootdirectory, "schemas");
 	}
 
 	public static File getSchemaDirectory(ConnectionController connection) {
-		String srootpath = connection.getDirectory().getAbsolutePath();
-		File rootdir = new File(srootpath);
-		return getSchemaDirectory(rootdir);
+		return getSchemaDirectory(connection.getDirectory());
 	}
 
 	public List<KeyValue> getDatatypes() {
