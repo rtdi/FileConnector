@@ -252,6 +252,7 @@ public class EditSchemaData {
 	}
 	
 	@XmlTransient
+	@JsonIgnore
 	public CsvParserSettings getSettings() {
 		return settings;
 	}
