@@ -1,8 +1,9 @@
-# RTDI Big Data FileConnector 
+# File Connector 
 
 _Constantly scan a given directory for new files matching a name pattern. If a new file appears, it is automatically parsed, mapped to the target structure, loaded into Kafka and then renamed to .processed. For configuring the file format definitions, the connector has a data driven UI._
 
-Source code available here: [github](https://github.com/rtdi/RTDIFileConnector)
+Source code available here: [github](https://github.com/rtdi/FileConnector)
+Docker image here: [dockerhub](https://hub.docker.com/r/rtdi/fileconnector)
 
 ## Design Thinking goal
 * As a business user I would like to load comma separated files into Apache Kafka, one line as one message
@@ -11,7 +12,7 @@ Source code available here: [github](https://github.com/rtdi/RTDIFileConnector)
 
 ## Core thoughts
 
-Comma separated files (CSV files) exist in different variations and hence require a lot of settings, many not immediately obvious. For example the file might originate from a system with a different character encoding set, might use country dependent formatting, escape characters, unusual column and row separators and many more. For such a scenario a data driven UI mstches the user needs best. A file is opened and step by step refined until its entire structure is defined, preferably with a lot of automation in the format detection.
+Comma separated files (CSV files) exist in different variations and hence require a lot of settings, many not immediately obvious. For example the file might originate from a system with a different character encoding set, might use country dependent formatting, escape characters, unusual column and row separators and many more. For such a scenario a data driven UI matches the user needs best. A file is opened and step by step refined until its entire structure is defined, preferably with a lot of automation in the format detection.
 
 ## Installation and testing
 
@@ -38,8 +39,8 @@ For proper start commands, especially https and security related, see the [Conne
   
 ## Help!
 
-The source code of this project is available at [github](https://github.com/rtdi/RTDIFileConnector).
-As an OpenSource project it grows with the interactions. Hence I invite all to create [issues](https://github.com/rtdi/RTDIFileConnector/issues) in github, no matter if it is a request for help or a product suggestions. Also, please spread the word. The more people are using it, the faster progress will be made to your benefit.
+The source code of this project is available at [github](https://github.com/rtdi/FileConnector).
+As an OpenSource project it grows with the interactions. Hence I invite all to create [issues](https://github.com/rtdi/FileConnector/issues) in github, no matter if it is a request for help or a product suggestions. Also, please spread the word. The more people are using it, the faster progress will be made to your benefit.
 
 
 ## Capabilities
@@ -52,27 +53,27 @@ The complete solution consists of the following modules:
 * Constantly scan for files in a given directory, parse them and send each line as one message. One file is one Kafka transaction.
 * Multiple producer instances allow parallel reading. Partitioning is based on the hash value of the file name.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Homepage.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-Homepage.png" width="50%">
 
 ### Connect the Pipeline to Kafka
 
 The first step is to connect the application to a Kafka server, in this example Confluent Cloud.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-PipelineConfig.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-PipelineConfig.png" width="50%">
 
 
 ### Define a Connection
 
 A Connection represents a directory with the data files. Within one directory there can be many files, even with different formats.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Connection1.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-Connection1.png" width="50%">
 
 
 ### Define the file format
 
 Each connection can have multiple file formats - schemas - defined. 
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Connection1-overview.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-Connection1-overview.png" width="50%">
 
 When creating a new schema, the first screen defines the file global settings. A file format has a name, it matches certain file name patterns (in regular expression format), it has a character encoding and a language default.
 To help finding the proper values, if a file is found its contents will be shown as text information. This helps to set e.g. the correct character set.
@@ -83,25 +84,25 @@ Note: Important characters in the [regular expression syntax](https://www.freefo
 
 Example: CENSUS.*\.csv matches all files that start with the text "CENSUS" and have the prefix ".csv", e.g. CENSUS_2018.csv would be found.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def1.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-Format-Def1.png" width="50%">
 
 
 In the next tab the parsing information is defined. What is the line delimiter, the column separator, does the file have a header row, the data types for each column. To speed up the process the format can be guessed as well and then further refined.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def2.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-Format-Def2.png" width="50%">
 
 The column definition tab is for the details about each column, primarily the format strings to be used when parsing e.g. date value.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Format-Def3.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-Format-Def3.png" width="50%">
 
 
 ### Create a Producer
 
 A Producer stands for the process scanning for files matching a schema, reading the files and the lines and sending the data to a server topic.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Add-Producer.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-Add-Producer.png" width="50%">
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Producer.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-Producer.png" width="50%">
 
 
 ### Data content
@@ -109,7 +110,7 @@ A Producer stands for the process scanning for files matching a schema, reading 
 As the schema was not mapped to any server schema, the Producer automatically create a schema on the server.
 The payload contains all the columns plus some extra metadata about the file/row. One file is loaded as one Kafka transaction and renamed after processing to either .error or .processed.
 
-<img src="https://github.com/rtdi/RTDIFileConnector/raw/master/docs/media/FileConnector-Data.png" width="50%">
+<img src="https://github.com/rtdi/FileConnector/raw/master/docs/media/FileConnector-Data.png" width="50%">
 
 
 ### Extension points
