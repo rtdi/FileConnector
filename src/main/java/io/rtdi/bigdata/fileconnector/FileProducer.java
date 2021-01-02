@@ -257,20 +257,25 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 		CsvParserSettings settings = format.getSettings();
 		AvroRowProcessor rowProcessor = new AvroRowProcessor();
 		settings.setProcessor(rowProcessor);
+		addOperationLogLine("Checking for new files");
 		filelist = readDirectory();
 		String transactionid = from_transactionid;
 		if (filelist != null) {
+			addOperationLogLine("Found " + String.valueOf(filelist.size()) + " files");
 			for (File file : filelist) {
 				logger.info("Reading File {}", file.getName());
 				rowProcessor.setFile(file);
 				transactionid = file.getName();
 				try {
 					try (FileInputStream in = new FileInputStream(file); ) {
+						addOperationLogLine("Sending file " + file.getName());
 						beginDeltaTransaction(transactionid, this.getProducerInstance().getInstanceNumber());
 						CsvParser parser = new CsvParser(settings);
 						parser.parse(in, FilePreviewService.getCharset(format));
 						commitDeltaTransaction();
+						addOperationLogLine("File contents sent");
 						renameToProcessed(file);
+						addOperationLogLine("File renamed so it is not read again");
 					} catch (IOException e) {
 						throw new ConnectorRuntimeException(
 								"IOException when parsing the file",
@@ -294,6 +299,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 					instance.addError(e);
 					logger.error("Poll ran into an exception", e);
 					abortTransaction();
+					addOperationLogLine("File reading failed, renaming it to *.error");
 					renameToError(file);
 				}
 			}
