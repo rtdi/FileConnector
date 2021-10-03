@@ -15,34 +15,18 @@ import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Parser;
 import org.apache.avro.Schema.Type;
+import org.apache.avro.SchemaBuilderException;
 import org.apache.commons.text.StringEscapeUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.univocity.parsers.csv.CsvParserSettings;
 
 import io.rtdi.bigdata.connector.connectorframework.controller.ConnectionController;
-import io.rtdi.bigdata.connector.connectorframework.entity.KeyValue;
 import io.rtdi.bigdata.connector.connectorframework.exceptions.ConnectorCallerException;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroBoolean;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroByte;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroCLOB;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroDate;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroDecimal;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroDouble;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroFloat;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroInt;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroLong;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroNCLOB;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroNVarchar;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroShort;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroTimestamp;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroTimestampMicros;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroType;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.AvroVarchar;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.IAvroDatatype;
-import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.SchemaException;
-import io.rtdi.bigdata.connector.pipeline.foundation.recordbuilders.AvroField;
-import io.rtdi.bigdata.connector.pipeline.foundation.recordbuilders.ValueSchema;
+import io.rtdi.bigdata.kafka.avro.datatypes.*;
+import io.rtdi.bigdata.kafka.avro.recordbuilders.AvroField;
+import io.rtdi.bigdata.kafka.avro.recordbuilders.ValueSchema;
+import io.rtdi.bigdata.connector.pipeline.foundation.entity.KeyValue;
 import io.rtdi.bigdata.connector.pipeline.foundation.utils.IOUtils;
 
 public class EditSchemaData {
@@ -298,14 +282,14 @@ public class EditSchemaData {
 		}
 	}
 	
-	public void writeSchema(File schemafile) throws SchemaException, IOException {
+	public void writeSchema(File schemafile) throws SchemaBuilderException, IOException {
 		String avsc = createSchema().toString(true);
 		try (FileWriter out = new FileWriter(schemafile);) {
 			out.write(avsc);
 		}
 	}
 
-	public Schema createSchema() throws SchemaException, IOException {
+	public Schema createSchema() throws SchemaBuilderException, IOException {
 		ValueSchema schema = new ValueSchema(schemaname, description);
 		Schema s = schema.getSchema();
 		s.addProp(FILENAMEPATTERN, filenamepattern);

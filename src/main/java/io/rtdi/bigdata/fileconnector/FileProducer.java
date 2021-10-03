@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.apache.avro.Schema;
+import org.apache.avro.SchemaBuilderException;
 
 import com.univocity.parsers.common.DataProcessingException;
 import com.univocity.parsers.common.ParsingContext;
@@ -26,15 +27,14 @@ import com.univocity.parsers.csv.CsvParserSettings;
 import io.rtdi.bigdata.connector.connectorframework.Producer;
 import io.rtdi.bigdata.connector.connectorframework.controller.ProducerInstanceController;
 import io.rtdi.bigdata.connector.connectorframework.exceptions.ConnectorRuntimeException;
-import io.rtdi.bigdata.connector.pipeline.foundation.SchemaConstants;
 import io.rtdi.bigdata.connector.pipeline.foundation.SchemaHandler;
 import io.rtdi.bigdata.connector.pipeline.foundation.TopicHandler;
 import io.rtdi.bigdata.connector.pipeline.foundation.TopicName;
 import io.rtdi.bigdata.connector.pipeline.foundation.avro.JexlGenericData.JexlRecord;
-import io.rtdi.bigdata.connector.pipeline.foundation.avrodatatypes.IAvroDatatype;
-import io.rtdi.bigdata.connector.pipeline.foundation.enums.RowType;
+import io.rtdi.bigdata.kafka.avro.RowType;
+import io.rtdi.bigdata.kafka.avro.SchemaConstants;
+import io.rtdi.bigdata.kafka.avro.datatypes.IAvroDatatype;
 import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.PropertiesException;
-import io.rtdi.bigdata.connector.pipeline.foundation.exceptions.SchemaException;
 import io.rtdi.bigdata.fileconnector.entity.EditSchemaData;
 import io.rtdi.bigdata.fileconnector.entity.EditSchemaData.ColumnDefinition;
 import io.rtdi.bigdata.fileconnector.rest.FilePreviewService;
@@ -79,7 +79,7 @@ public class FileProducer extends Producer<FileConnectionProperties, FileProduce
 	public void startProducerChangeLogging() throws IOException {
 	}
 
-	protected Schema createSchema(String sourceschemaname) throws SchemaException, IOException {
+	protected Schema createSchema(String sourceschemaname) throws SchemaBuilderException, IOException {
 		return format.createSchema();
 	}
 	
