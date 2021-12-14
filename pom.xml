@@ -4,11 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.rtdi.bigdata.connector</groupId>
 	<artifactId>fileconnector</artifactId>
-	<version>0.9.44</version>
+	<version>0.9.45</version>
 	<packaging>war</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<io.rtdi.bigdata.connector.version>0.10.11</io.rtdi.bigdata.connector.version>
+		<io.rtdi.bigdata.connector.version>0.10.16</io.rtdi.bigdata.connector.version>
 	</properties>
 	<build>
 		<finalName>${project.artifactId}</finalName>
@@ -46,11 +46,6 @@
 			<groupId>com.univocity</groupId>
 			<artifactId>univocity-parsers</artifactId>
 			<version>2.9.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-text</artifactId>
-			<version>1.9</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.tomcat</groupId>
